@@ -1,13 +1,32 @@
-## Synthese-oefening: Winkelmandje
+# Synthese-oefening
 
-Dit hoofdstukje bouwt rond een herhalings-oefening maken rond het werken met **klassen en objecten** gecombineerd met het gebruik van **lijsten**.
+## Inleiding
 
-Naast het herhalen van het OO-principe willen we hier ook aantonen dat eender welk wat grotere applicatie **step-by-step** moet worden opgebouwd.  
+Op dit moment van de cursus zijn we toegekomen aan het werken met:
 
-De oefening gaat er van uit dat je reeds Git hebt geïnstalleerd.  
-Indien dit nog niet het geval is, zie https://git-scm.com/ voor installatie-instructies.
+* **Klassen** en **objecten**
+* **Collecties** en arrays
 
-### Step-by-step coderen (zeer belangrijk!!!)
+### Step-by-step
+
+Deze **nieuwe elementen** laten ons toe om **grotere programma's** te maken (met veel meer functionaliteit).  
+
+Om zulke **grotere programma's** - die in het beroepsveld worden gebouwd - schrijven vereist echter een zekere **discipline** en **aanpak** nodig met onder andere:
+
+* **Step-by-step**-aanpak
+* **Opbouw** en **design**
+* Gebruik van **tooling** om je **code-base** te **beheersen**
+
+### Mini-projectje
+
+We bouwen hier voor een **éénvoudige commandline** applicatie - een **Winkelmandje** - op basis van een **event-loop**
+die we **stelselmatig** **uitbreiden**.
+
+Dit hoofdstukje is dus **enerzijds** een **herhalings**-oefening maken rond het werken met **klassen en objecten** gecombineerd met het gebruik van **lijsten**.  
+
+Naast het herhalen van het OO-principe willen we hier ook aantonen dat eender welk wat grotere applicatie **step-by-step** moet worden opgebouwd.
+
+### Step-by-step met Git
 
 Dit doe je door de volgende stappen constant te herhalen:
 
@@ -22,7 +41,7 @@ Dit doe je door de volgende stappen constant te herhalen:
   * We voegen een **duidelijke** **commentaar** toe
 * ...en we starten opnieuw...
 
-De laatste actie - revisioneren - is iets wat we nu voor de **eerste maal** introduceren.  
+De laatste actie - **revisioneren** - is iets wat we nu voor de **eerste maal** introduceren.  
 Het komt er op neer van (met behulp van een tool) de evolutie en verschillende versies bij te houden, waardoor dat je:
 
 * Een **historiek** kan behouden van de wijzigingen van je code
@@ -32,17 +51,11 @@ Het komt er op neer van (met behulp van een tool) de evolutie en verschillende v
 
 De tool die we hiervoor gebruiken is **Git**, en quasi **standaard** op **gebied** van **code-beheer**.  
 
-### Bottom-up learning
-
-We gaan in deze sessie git gebruiken op een specifieke manier:
-
-* **Lokaal**: we maken enkel een **lokale repo** aan, nog geen repo op een remote git-server (zoals bv. Github...)
-* **Low level**: we werken vanuit een command line om de underpinnings van de tool goed te leren kennen.  
-  In Visual Studio is het weliswaar veel gemakkelijker maar uit didactische redenen (om git te leren kennen moeten je het sowieso een keer in de terminal gebruiken) gebruiken we nu de terminal.
-
-### Aanmaken van een Visual Studio-project
+## Opzetten van het project
 
 In dit voorbeeld gaan we Git gebruiken om de **wijzigingen** van onze **applicatie** bij te houden.  
+
+### Met Visual Studio (Windows)
 
 We starten met:
 
@@ -64,46 +77,39 @@ Tenslotte maak je het project aan met de optie "Do not use top-level statements"
 
 ![](new_console_project_3.png)
 
+Als resultaat zou je een project moeten krijgen zoals hieronder...
 
-#### Stap 2: Open een terminal
+![](new_console_project_4.png)
 
-Zoals eerder weer gezegd, we gebruiken hiervoor de terminal.  
+#### Stap 2: Git toevoegen aan dit project
 
-Hiervoor gebruiken we de "Nuget Package Manager"-console (of Powershell).
+We selecteren in het menu Git/Create Repository
 
-Select hiervoor "Package Manager Console" zoals in de printscreen hieronder geillustreerd.
+![](git_new_repo_1.png)
 
-![](terminal_open.png)
+Binnen dat menu kiezen we:
 
-Vervolgens is deze geopened maar wil je deze nog onderaan bij de andere consoles krijgen, die doe deze console met de rechtermuis te selecteren en "Dock" te selecteren.
+* Local Only (linkerkant)
+* Optioneel mag je ook nog "Add README.md" toevoegen (komen we later nog op terug)
 
-![](terminal_opened.png)
+![](git_new_repo_2.png)
 
-Nadien zal deze onderaan geopend staan zoals hieronder:
+#### Resultaat
 
-![](terminal_docked.png)
+Wat is er nu gebeurd?  
+Op in het menu "Git/Open in File Explorer", dit opent een file explorer met je project.  
 
-Dit is in principe een powershell-console, maar wel ingebed in je applicatie.  
-Als je bijvoorbeeld het pwd-command (**p**rint **w**ork **d**irectory) zal je zien dat je in de huidige directory bevind...
+> Zie wel dat je in je file explorer aanduidt dat je "hidden files" kan zien
 
-![](pwd.png)
+Binnen deze folder zie je dat er aantal nieuwe hidden files zijn:
 
-#### Stap 3: We maken een git-project aan
+* Een **.git-folder** deze bevat de database-objecten die je code-wijzigingen bijhoudt
+* Een **.gitignore** die aanduidt welke files (extensies) er moeten genegeerd worden door git
+* **.gitattributes** die configuratie bevat hoe om te gaan met files
 
-We starten nu binnen deze console (die dus geopend is in de project-root) om ons project te verrijken met een git-repo
+![](git_new_repo_3.png)
 
-Hier voor typ je in de console het commando **"git init"**
-
-~~~bash
-$ git init
-Initialized empty Git repository in /home/bart/school_test/basket/.git/
-~~~
-
-Deze actie maakt - in deze folder basket - een lokale **git-repository**.  
-
-![](git_init.png)
-
-Zo'n **git-repository** is 
+Die .git-folder noemen we ook een **lokale** **git-repository**, dit is 
 
 * Een soort van database waar je **code-wijzigingen** kan **bijhouden/traceren**
 * Als een soort van **snapshot** (zoals je bijvoorbeeld een snapshot van een harde schijf zou nemen)
@@ -111,98 +117,174 @@ Zo'n **git-repository** is
 
 De files die deze database omvatten bevinden zich in een verborgen folder **.git** .
 
-~~~
-$ ls -a
-.  ..  .git
-$ ls -a .git/
-.  ..  branches  config  description  HEAD  hooks  info  objects  refs
-~~~
+#### Git Commits
 
-Met het commando **"git status"** kan je dan vervolgens controleren wat de status is.
+Deze repository houdt dus code-wijzigingen bij, we noemen dit **commits**.  
 
-~~~
-$ git status
-On branch master
+Deze **commits** zijn eigenlijk **incrementele wijzigingen** aan je code die **samengebundeld** zitten in een **historiek** (fysiek zijn deze geregistreerd in de .git-folder die we eerder vermeldden).  
+Vanuit Visual Studio kan je deze **history** van deze commits zien door in het *menu "Git/View Branch History"* te selecteren.
 
-Initial commit
+![](git_new_repo_4.png)
 
-nothing to commit (create/copy files and use "git add" to track)
-$ 
-~~~
+Hier zie je dat Visual Studio voor jou reeds 2 commits heeft aangemaakt.  
+Hoe je **zelf** code-**wijzigingen** moeten **registreren** gaan we zo dadelijk in deze **oefening** in de praktijk brengen...
 
-De output van dit commit **suggereert** het gebruik van **git add** te gebruiken, we komen hier zo dadelijk nog op terug.
+Je kan ook deze commits bekijken door hier met de rechtermuisknop op te klikken "View Commit Details" te selecteren
 
-### Git: Je 1ste commit met git...
+![](git_new_repo_4.png)
 
-~~~
-PM> git status
-On branch master
+Vervolgens zie je dan de files die gewijzigd zijn met de inhoud daarbij gelinkt:
 
-No commits yet
+![](git_new_repo_4.png)
 
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-	.vs/
-	PRB.ShoppingBasket.Bart.sln
-	PRB.ShoppingBasket.Bart/
+In dit geval zie je dat er 3 files zijn toegevoegd, de **A** opzij aan de files staat voor **APPEND**.  
+Daarnaast zie je ook in **groen** de inhoud die is **toegevoegd** op de geselecteerde file
 
-nothing added to commit but untracked files present (use "git add" to track)
-PM> 
-~~~
+### Met VS Code (Linux, Mac, ...)
 
+#### Stap 1: Aanmaken project
 
-~~~
-PM> git add .\PRB.ShoppingBasket.Bart.sln
-PM> git add .\PRB.ShoppingBasket.Bart\PRB.ShoppingBasket.Bart.csproj
-PM> git add .\PRB.ShoppingBasket.Bart\Program.cs
-PM> 
-~~~
+Start met het aanmaken van een folder met de naam *PRB.ShoppingBasket.Bart* aan waar je Bart **wijzigt** door je **eigen naam**.  
 
-~~~
-PM> git status
-On branch master
+![](new_console_project_vs_0.png)
 
-No commits yet
+Vervolgens **open** je deze **folder** met **VS Code**.  
+Hier gebruik je het command palette (ctrl+shift+p of command+shift+p voor Mac) om een **nieuw project** aan te maken.
 
-Changes to be committed:
-  (use "git rm --cached <file>..." to unstage)
-	new file:   PRB.ShoppingBasket.Bart.sln
-	new file:   PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
-	new file:   PRB.ShoppingBasket.Bart/Program.cs
+![](new_console_project_vs_1.png)
 
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-	.vs/
-	PRB.ShoppingBasket.Bart/obj/
+Nadat u de opdracht hebt geselecteerd, moet u de **project template** kiezen. Kies **Console-app**.  
+(gemakkelijkste is Console te typen om de selectie te versnellen)
 
-PM> 
-~~~
+![](new_console_project_vs_2.png)
 
-* Committen
+Geef uw nieuwe project dezelfde naam als de solution (folder) "PRB.ShoppingBasket.Bart" waar je Bart
+wijzigt door je eigen naam..
 
-~~~
-PM> git commit -m "First commit, initializing the project"
-[master (root-commit) 51c1a01] First commit, initializing the project
- 3 files changed, 45 insertions(+)
- create mode 100644 PRB.ShoppingBasket.Bart.sln
- create mode 100644 PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
- create mode 100644 PRB.ShoppingBasket.Bart/Program.cs
-PM>
-~~~
+![](new_console_project_vs_3.png)
 
-~~~
-PM> git log
-commit 51c1a0119e71f3a9e22f978150b94f551a91ff58
-Author: Bart Voet <bart.voet@student.ehb.be>
-Date:   Tue Nov 18 22:30:58 2025 +0100
+Selecteer vervolgens de locatie van nieuwe project (kies hier de default zijnde deze folder).
 
-    First commit, initializing the project
-PM> 
+![](new_console_project_vs_4.png)
+
+Alvorens je het project "aanmaakt" zorg er eerst voor dat je de top-level statements uitschakelt.   Selecteer "Show all template options." zoals je hieronder ziet:
+
+![](new_console_project_vs_5.png)
+
+Stel "Do not use top-level statements" in op "true".  
+
+![](new_console_project_vs_6.png)
+
+![](new_console_project_vs_7.png)
+
+Selecteer tot slot "Create Project".  
+Nadien is het project aangemaakt bestaande uit een solution met 1 project (beiden zelfde naam)
+
+![](new_console_project_vs_8.png)
+
+1 klasse is aangemaakt als gevolg, als je de top-level-statements hebt uitgeschakeld zal 
+deze als volgt eruit zien:
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Hello, World!");
+        }
+    }
+}
 ~~~
 
-### Code schrijven: Basket-item-class
+#### Stap 2: git-repo aanmaken
 
+Om met git te werken in VS Code heb je iets meer setup werk nodig vergeleken tot Visual Studio.  
 
+Visual Studio maakt namelijk automatisch reeds een .gitignore file aan, dit is een file die er voor zorgt dat git niet-source-code elementen negeert (zoals de eigenlijke executable)
+
+Je maakt hiervoor een nieuwe file aan in de root van je solution met de naam .gitignore.
+
+![](git_new_repo_vs_1.png)
+
+Vervolgens copieer je onderstaande inhoud in deze file
+
+~~~.gitignore
+[Dd]ebug/
+[Rr]elease/
+x64/
+[Bb]in/
+[Oo]bj/
+~~~
+
+![](git_new_repo_vs_2.png)
+
+Vervolgens maken we een nieuwe git-repository aan door te navigeren naar het "Source Code"-gedeelte.  
+Hier druk je op de knop "Create repository".
+
+![](git_new_repo_vs_3.png)
+
+Dit command zal een lokale git-repository aan:
+
+~~~bash
+bart@linuxcomputers:~/Demo/PRB.ShoppingBasket.Bart$ ls -la
+total 28
+drwxrwxr-x  5 bart bart 4096 nov 23 21:48 .
+drwxrwxrwx 17 bart bart 4096 nov 23 20:44 ..
+drwxrwxr-x  8 bart bart 4096 nov 23 21:49 .git
+-rw-rw-r--  1 bart bart   42 nov 23 21:48 .gitignore
+drwxrwxr-x  4 bart bart 4096 nov 23 21:47 PRB.ShoppingBasket.Bart
+-rw-rw-r--  1 bart bart 1045 nov 23 21:00 PRB.ShoppingBasket.sln
+drwxrwxr-x  2 bart bart 4096 nov 23 21:00 .vscode
+bart@linuxcomputers:~/Demo/PRB.ShoppingBasket.Bart$ 
+~~~
+
+Die .git-folder noemen we ook een **lokale** **git-repository**, dit is 
+
+* Een soort van database waar je **code-wijzigingen** kan **bijhouden/traceren**
+* Als een soort van **snapshot** (zoals je bijvoorbeeld een snapshot van een harde schijf zou nemen)
+* Het stelt je in staat een historiek bij te houden en zelfs terug te keren naar een vorige **revisie**
+
+De files die deze database omvatten bevinden zich in een verborgen folder **.git**.  
+In VS Code ga je dan onderstaande view zien met de files die klaar staan om te **committen**
+
+![](git_new_repo_vs_4.png)
+
+#### Git Repo en Commits
+
+Deze repository houdt dus code-wijzigingen bij, we noemen dit **commits**.  
+
+Deze **commits** zijn eigenlijk **incrementele wijzigingen** aan je code die **samengebundeld** zitten in een **historiek** (fysiek zijn deze geregistreerd in de .git-folder die we eerder vermeldden).  
+
+Momenteel zijn er nog geen commits aanwezig, we gaan echter al onze 1ste commit aanmaken
+om het initiele project te registreren.  
+Om dit te doen moet je files aanduiden om te committen door op het plusje te klikken naast elke file die je wil toevoegen (in dit geval all files die je ziet)
+
+![](git_new_repo_vs_5.png)
+
+Vervolgens zal je zien dat al deze files zijn verhuisd naar een "Staging Area".  
+Van de files die daar staan zullen de wijzigingen mee worden opgenomen in de commit:
+
+![](git_new_repo_vs_6.png)
+
+Vervolgens geeft je een comment in het tekstvenstertje "Setting up project" en druk je op de knop "Commit"
+
+#### Git commits en Historiek
+
+Na deze commit zal je - onderaan - zien dat er een 1ste commit is toegevoegd aan je historiek van de 
+
+![](git_new_repo_vs_7.png)
+
+Als je op deze commit klikt kan je dan ook zien welke files en wijzigingen zijn toegevoegd...
+
+![](git_new_repo_vs_8.png)
+
+In dit geval zie je dat er 3 files zijn toegevoegd, de **A** opzij aan de files staat voor **APPEND**.  
+
+## Code schrijven
+
+### Basket-item-class
 
 Alvorens met git verder te gaan starten we met **code te schrijven**.  
 Bedoeling is dat we een **applicatie** gaan maken die een **winkelmandje** (of **winkellijstje**) gaat beheren.
@@ -212,48 +294,61 @@ Laten we starten met er van uit te gaan dat zo'n **item** een **beschrijving** e
 
 We hebben in het studenten-voorbeeld gezien hoe je zulke gestructureerde data kan **bijhouden/groeperen** in een **klasse**.
 
-We starten met een file **basket.py** aan te maken en voorzien daarin een klasse **BasketItem** voorzien:
+We starten met een file **BasketItem.cs** aan te maken en voorzien daarin een klasse **BasketItem** voorzien:
 
-!()[new_class.png]
+![](new_class.png)
+
+In VS Code gebruik je het command palet, selecteer je "New File" zoals hieronder
+
+![](vs_code_new_class.png)
+
+De klasse zou er als volgt moeten uit zien:
 
 ~~~cs
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PRB.ShoppingBasket.Bart.Model
+namespace PRB.ShoppingBasket.Bart
 {
     public class BasketItem
     {
-        private int _price;
-        private string _description;
 
+    }
+}
+~~~
+
+Deze zou je ook moeten zien in je explorer:
+
+![](new_class_file.png)
+
+Voorzie vervolgens in de klasse **2 properties**:
+
+* Price
+* Description
+
+en **initialiseer** deze via een **constructor**, het resultaat zou er als
+volgt moeten uitzien:
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class BasketItem
+    {
         public BasketItem(int price, string description)
         {
             Price = price;
             Description = description;
         }
 
-        public int Price 
-        {
-            get { return _price;}
-            private set { _price = value;}
-        }
+        public int Price { get;private set; }
 
-        public string Description
-        {
-            get { return _description; }
-            private set { _description = value; }
-        }
+        public string Description { get;private set; }
     }
 }
 ~~~
 
-Deze klasse bevat **2 properties**, een **beschrijving** en een **prijs** van het item.
+Bemerk ook dat we de **setter private** hebben gezet, dit doen we ter encapsulatie.  
+We willen bijvoorbeeld dat logica gerelateerd aan het beheer in de BasketItem-klasse
+zelf zit (en dat je die niet zo maar kan wijzigen)
 
-Om zeker te zijn van correctheid passen we Program.cs aan om zeker te zijn dat deze geen code-fouten bevat.
+Om zeker te zijn van correctheid passen we Program.cs aan om zeker te zijn dat deze geen code-fouten bevat, maw we **testen** bij elke **stap**.
 
 ~~~cs
 using PRB.ShoppingBasket.Bart.Model;
@@ -271,104 +366,71 @@ namespace PRB.ShoppingBasket.Bart
 }
 ~~~
 
-Vanzelfsprekend doet deze nog **niet** erg **veel**, daar komen we zo dadelijk **op** **terug**.  
-Eerst gaan we echter onze eerste **code-wijzigen registereren/revisioneren**
+Vanzelfsprekend doet deze nog **niet** erg **veel**, maar het is een 1ste stap...  
+Eerst gaan we echter onze eerste **code-wijzigen registereren/revisioneren** in git.
 
-### Git: Je 1ste commit met git...
+#### Git: Je 1ste (echte) code-commit
 
-We hebben ons **eerste stuk code** geschreven, als we via het git-commando **"git status"** de status opvragen...
+We hebben ons **eerste stuk code** geschreven.  
+De volgende stap is dat we deze files gaan toevoegen aan een **nieuwe commit**.
 
-~~~
-$ git status
-On branch master
+Als je nu in het menu "Git/Commit" selecteert zie je de wijzigingen die klaarstaan
 
-Initial commit
+![](first_commit_1.png)
 
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
+**Merk** ook dat naast de **files** ook nog letters staan, deze tonen aan wat er met de file is gebeurd:
 
-        PRB.ShoppingBasket.Bart/BasketItem.cs
+* **A** staat voor toevoegen (**A**ppend)
+* **M** staat voor wijzigen (**M**odify)
 
-nothing added to commit but untracked files present (use "git add" to track)
-~~~
+##### Files naar staging-area
 
-...zien we dat git gezien heeft dat de file is gewijzigd en dat deze niet wordt getraceerd (tracked)   
-We gebruiken het command **"git add <file>"** om deze toe te voegen aan de git-repo
+Voor dat je deze commit gaat maken moet je 1st nog de files selecteren die je aan deze commit wil
+binden.  Als je dit doet ga je deze brengen naar een staging-omgeving (maw ze staan dan klaar om te committen).
 
-~~~
-$ git add PRB.ShoppingBasket.Bart/BasketItem.cs 
-$ git status
-On branch master
+Als je **"hoovert"** over het item zie je dat er een **+** verschijnt:
 
-Initial commit
+![](first_commit_2.png)
 
-Changes to be committed:
-  (use "git rm --cached <file>..." to unstage)
+Als je daar op die **+ klikt** komt de specifiek file terecht in de staged area:
 
-        new file:   basket.py
-~~~
+![](first_commit_3.png)
 
-Er staat **"Changes to be committed"**, dit betekent dat je nu aan de **git-repo** hebt meegedeeld dat er een **wijziging** is.  
-De wijziging is echter **nog niet** in de git-repo **opgeslagen**, om dit te volbrengen moeten we een **commit** uitvoeren.
+Doe dit vervolgens ook voor de andere file en dan zouden beide wijzigingen moeten klaarstaan:
 
-Dit kan je met het commando **"git commit"**.  
-Zo'n **commit** moet altijd vergezeld gaan van een boodschap, in dit geval "Creating class BasketItem.py".  
+![](first_commit_4.png)
 
-> Belangijk:  
-> Probeer deze **boodschap** kort maar toch **duidelijk** te maken.  
-> Hoe **duidelijker** deze is hoe **gemakkelijker achteraf** om te consulteren wat je wijziging waren.
+##### Committen...
 
-~~~
-$ git commit -m "Creating class BasketItem.py"
-[master (root-commit) 6e8de93] Creating class BasketItem.py
- 1 file changed, 3 insertions(+)
- create mode 100644 basket.py
-$ git status
-On branch master
-nothing to commit, working directory clean 
-$
-~~~
+De volgende stap is nog een **boodschap** te **selecteren** die je wijzigingen documenteert.  
+Het is extreem belangrijk dat je deze **boodschap** **duidelijk** (maar wel beknopt) houdt.
 
-Als we de status oproepen zien we dat er geen nieuwe wijziging meer is.  
-Met het commando **"git log"** kan je dan zien dat je wijziging is geregistreerd
+Hoe **duidelijker** deze is hoe **gemakkelijker achteraf** om te consulteren wat je wijziging waren.  
+Je vult gewoon het tekstveldje met een duidelijk maar korte zin...
 
-~~~
-$ git log
-commit 6e8de9336064b7c7b7ff1c5e3ebff40a068efb7b
-Author: Bart Voet <bart_voet@telenet.be>
-Date:   Sun Jan 10 19:43:15 2021 +0100
+![](first_commit_5.png)
 
-    Creating class BasketItem.py
-$
-~~~
+Vervolgens druk je op de button "Commit Staged" en is deze commit geregistreerd in je history.  
+Om naar deze history te gaan kies je in het Git-menu "View Branch History" of klik je op de "View all commits"-link.
 
-Op de eerste lijn van deze output zie je lange string van **hexadecimale tekens** (6e8de9336064b7c7b7ff1c5e3ebff40a068efb7b), dit is wat we noemen de **commit-id**, een unieke **identifier** voor je code-wijzigingen
+![](first_commit_6.png)
 
-Deze kan je dan gebruiken om achteraf je code wijzigingen te bekijken via het commando **"git show"**  
-Type git show gevolgd door de commit-id (normaal gezien is het voldoende om de 1ste 5 karakters te typen)
+en krijg je een overzicht van de commits die zijn gemaakt met je laatste commit 1st in de rij
 
-> **Belangrijk:**  
-> Zo'n commit is het centrale begrip in git, het is een soort van snapshot van je code op een bepaald tijdstip
+![](first_commit_7.png)
 
-~~~
-git show 6e8de9
-commit 6e8de9336064b7c7b7ff1c5e3ebff40a068efb7b
-Author: Bart Voet <bart_voet@telenet.be>
-Date:   Sun Jan 10 19:43:15 2021 +0100
+##### Stelselmatig verder werken en committen
 
-    Creating class BasketItem.py
+Bedoeling nu is dat je dit proces stelselmatig verder werkt:
 
-diff --git a/basket.py b/basket.py
-new file mode 100644
-index 0000000..6e6b720
---- /dev/null
-+++ b/basket.py
-@@ -0,0 +1,3 @@
-+class BasketItem:
-+    description = ""
-+    itemPrice = 0
-\ No newline at end of file
-~~~
+* **Kleine** maar **significante** wijziging maken
+* Dit **testen** op 
+  * **regressie** -> werkt je wijziging nog altijd, niets gebroken?
+  * werkt de nieuwe **functionaliteit** die je hebt toegevoegd
+* Een **commit** samenstellen met je **wijzigingen**
+
+> Het testen gaat na een tijdje veel werk zien, we gaan hievoor later nog 
+> de techniek van unit-testen zien die je in staat stelt je testen te automatiseren...
 
 ### Code schrijven: event-loop
 
@@ -398,7 +460,9 @@ namespace PRB.ShoppingBasket.Bart
 
 #### Event-loop (loop)
 
-De applicatie moet natuurlijk nog wel iets doen, dus als **eerste stap** zetten we de **interactie met de gebruiker** op.  
+De applicatie moet natuurlijk nog wel iets doen, dus om deze lijst aan te vullen
+zetten als **eerste stap** zetten we de **interactie met de gebruiker** op.  
+
 Om met de gebruiker te praten voegen we:
 
 * Een **oneindige lus** toe
@@ -427,7 +491,7 @@ namespace PRB.ShoppingBasket.Bart
                 Console.Write("Geef een item-naam: ");
                 string name = Console.ReadLine();
 
-                Console.Write("Geen een prijs");
+                Console.Write("Geef een prijs");
                 int price = int.Parse(Console.ReadLine());
 
                 items.Add(new BasketItem(price, name));
@@ -437,14 +501,15 @@ namespace PRB.ShoppingBasket.Bart
 }
 ~~~
 
-Hier ontbreekt nog een stuk om van een event-loop te spreken...
-
-> Het pass-statement wordt hier enkel tijdelijk gebruikt gezien we hier nog geen invulling hebben gegeven aan onze loop=;
+Hier ontbreekt nog een stuk om van een event-loop te spreken maar we hebben reeds de basisstructuur
+opgezet die 
 
 #### Event-loop (menu)
 
 Een **oneindige loop** is natuurlijk **niet voldoende**, de gebruiker moet een **menu** hebben (afgeprint).  
 We printen hier het menu telkens af en vangen gebruikers-input op via de functie **input()**
+
+> Voor het menu gebruiken we een **multiline string** die start en eindigt met 3 dubbele quotes
 
 ~~~cs
 using PRB.ShoppingBasket.Bart.Model;
@@ -476,6 +541,11 @@ namespace PRB.ShoppingBasket.Bart
 
 De **user-input** wordt gevraagd en **opgevangen**, maar er is nog **meer nodig**...
 
+##### En nog een commit...
+
+Maak nu een commit waarin je deze code commit.  
+Geen hierbij een duidelijke boodschap zoals bijvoorbeeld "Opzetten van event-loop met menu"
+
 #### Event-loop (if-else)
 
 We moeten er natuurlijk voor zorgen dat deze **user-input verwerkt** wordt.  
@@ -498,12 +568,9 @@ Hiervoor plaatsen we een **if/elif-clausule** voor elke **menu-optie**.
 ~~~
 
 Voorlopig printen we een **tijdelijke TODO-boodschap** waarmee we kunnen **testen** of onze event-loop correct werkt.   
-We voeren even een **korte test** uit...
+We voeren even een **korte test** uit zoals hieronder...
 
 ~~~
-bart@linuxcomputers:~/Install/test$ dotnet run
-/home/bart/Install/test/BasketItem.cs(14,16): warning CS8618: Non-nullable field '_description' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as nullable.
-/home/bart/Install/test/Program.cs(20,37): warning CS8600: Converting null literal or possible null value to non-nullable type.
 1> Voeg item toe
 2> Print items af
 3> Sluit af
@@ -531,7 +598,7 @@ Het **basis-skelet** van onze **event-loop** lijkt **ok** te zijn.
 > Voer deze code uit met **Python 3**, met Python 2 zal deze code niet correct runnen.  
 > Later in de cursus komen we nog terug op deze verschillen.
 
-### Git: Een 2de commit...
+##### En nog een commit...
 
 Een nieuwe fase van onze ontwikkeling is **ontwikkeld** en **getest**, we gaan nu deze **code-wijziging** toevoegen aan onze **git-repo**.
 
@@ -618,7 +685,7 @@ Het programma wordt beeindigd
 ~~~
 
 
-### git: diff en nog commit's
+#### git: diff en nog commit's
 
 We gaan deze wijziging/progress ook **bewaren** in de git-repo.  
 Alvorens dit te doen, gebruiken we het **"git diff"**-commando om te inspecteren wat we hebben gewijzigd tov de vorige commit.
@@ -774,7 +841,7 @@ $
 Als we deze testen zien we dat de **hardcoded lijst** wordt **afgedrukt**, dus onze test is uitgevoerd dus we kunnen **revisioneren**
 
 
-### git: ... volgende commit
+#### git: ... volgende commit
 
 We voegen onze **wijzigingen** toe aan de git repo met een commit:
 
@@ -867,7 +934,7 @@ De test is uitgevoerd:
 * We kunnen meerdere items **toevoegen**
 * En deze nog altijd **afprinten**
 
-### git: ... volgende commit
+#### git: ... volgende commit
 
 We **voegen** onze wijzigingen **toe** aan de **git** repo:
 
@@ -922,7 +989,7 @@ while True:
 We voeren opnieuw dezelfde test uit die we bij de vorige commit hadden uitgevoerd en zien dat onze code nog altijd naar behoren werkt (geen regressie).
 
 
-### git: ...volgende commit
+#### git: ...volgende commit
 
 We kunnen dus opnieuw een  commit toevoegen hiervoor met een korte duidelijke boodschap:
 
@@ -1024,7 +1091,7 @@ Programma wordt beeindigd
 
 Test OK, we kunnen vervolgen met onze commit...
 
-### git: commit
+#### git: commit
 
 ~~~
 $ git commit -m "Adding a quantity to BasketItem"
@@ -1111,7 +1178,7 @@ Programma wordt beeindigd
 
 De test is geslaagd...
 
-### git: volgend commit...
+#### git: volgend commit...
 
 ...We kunnen dit **committen**
 
@@ -1121,7 +1188,7 @@ $ git commit -m "Adding total-value"
  1 file changed, 3 insertions(+)
 ~~~
 
-### Basket-klasse
+### Aparte Basket-klasse bouwen
 
 Een kleine **optimalisatie** is het isoleren van het beheer van verschillende items in een binnen een aparte klasse.  We noemen deze klasse **Basket**
 
@@ -1201,7 +1268,7 @@ Totaal: 2750
 ...
 ~~~
 
-### git: committen maar...
+#### git: committen maar...
 
 ~~~
 git commit -m "Adding Basket-class to manage group of items"
@@ -1317,6 +1384,8 @@ Geef hoeveelheid: -10
 ...
 ~~~
 
+#### Git commit...
+
 ~~~
 $ git commit -m "Exception handling, avoid negative values"
 [master 8176859] Exception handling, avoid negative values
@@ -1402,7 +1471,7 @@ while True:
         print("Foutieve keuze")
 ~~~
 
-### git: ...nog een commit...
+#### git: ...nog een commit...
 
 Vanzelfsprekend voeren we een nieuwe commit uit:
 

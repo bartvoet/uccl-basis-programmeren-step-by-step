@@ -282,7 +282,9 @@ Als je op deze commit klikt kan je dan ook zien welke files en wijzigingen zijn 
 
 In dit geval zie je dat er 3 files zijn toegevoegd, de **A** opzij aan de files staat voor **APPEND**.  
 
-## Code schrijven
+## Code schrijven (deel 1): klasses, objecten en properties
+
+In dit 1ste deel gaan een kleine basis applicatie bouwen
 
 ### Basket-item-class
 
@@ -714,8 +716,6 @@ We doen dit door **event 1** te **implementeren** door de 3 volgende taken te im
 * Stap 1: We **verwijderen** hierbij ook de eerder aangemaakte **hard-coded** lijst
 * Stap 2: We **vragen** de **prijs** en **beschrijving** op en **voegen** deze als object **toe** aan de lijst
 
-
-
 ~~~cs
     case ("1"):
         Console.Write("Geef prijs: ");
@@ -729,7 +729,7 @@ We doen dit door **event 1** te **implementeren** door de 3 volgende taken te im
         break;
 ~~~
 
-Als we dit **uittesten**:
+Als we dit **testen** zie we dat we nu dynamisch items kunnen toevoegen:
 
 ~~~
 1> Voeg item toe
@@ -767,6 +767,8 @@ We **voegen** onze wijzigingen **toe** aan de **git** repo met de commit-boodsch
 
 ### Code schrijven: Voeg een attribuut quantity toe
 
+#### Nieuwe property Quantity toevoegen
+
 In een winkelmandje dien je soms **meerdere items** van **hetzelfde product** bij te houden.  
 Om dit op te lossen voegen we aan onze klasse BasketItem een **attribute quantity** toe
 
@@ -778,498 +780,178 @@ Hiervoor **voegen** we aan de **constructor** een **attribuut toe**...
 > Als men dan deze waarde zou weglaten (bij aanroep van de constructor) krijgt dit attribuut
 > deze default waarde
 
-~~~python
-class BasketItem:
-    def __init__(self, description, itemPrice, quantity = 1):
-        self.description = description
-        self.itemPrice = itemPrice
-        self.quantity = quantity
-    
-    def totalPrice(self):
-        return self.itemPrice * self.quantity
+Hiervoor breiden we onze constructor uit met een nieuw argument.  
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class BasketItem
+    {
+        public BasketItem(int price, string description, int quantity = 1) 
+        {
+            Price = price;
+            Description = description;
+            Quantity = quantity;
+        }
+
+        public int Quantity { get; set; }
+
+        public int Price { get; private set; }
+
+        public string Description { get; private set; }
+    }
+}
 ~~~
 
-... daarnaast voegen we een functie **totalPrice()** toe, hiermee bereken we de werkelijke prijs
+Hiervoor gebruiken we een nieuw element in C#, namelijk **default arguments**.  
+Als je geen quantity meegeeft aan je constructor zal deze op 1 worden gezet...
 
-Binnen de event-loop passen we dan de print aan zodat die niet de prijs van 1 item afdrukt maar de prijs van de totaal aantal items.
+#### Nieuwe (afgeleide) property TotalPrice toevoegen
 
-~~~python
-class BasketItem:
-    def __init__(self, description, itemPrice, quantity = 1):
-        self.description = description
-        self.itemPrice = itemPrice
-        self.quantity = quantity
-    
-    def totalPrice(self):
-        return self.itemPrice * self.quantity
+... daarnaast voegen we een extra property **TotalPrice** toe, hiermee bereken we de werkelijke prijs
 
-menu = """
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-"""
-
-items = []
-
-while True:
-    menu_input = input(menu)
-    if menu_input == "1":
-        # Request input from user
-        description = input("Geef beschrijving: ")
-        price = int(input("Geef prijs: "))
-        quantity = int(input("Geef hoeveelheid: "))
-        # Append new item
-        items.append(BasketItem(description, price, quantity))
-    elif menu_input == "2":
-        for item in items:
-            print(item.quantity, "*", item.description, " = ", item.totalPrice())
-    elif menu_input == "3":
-        print("Programma wordt beeindigd")
-        exit()
-    else:
-        print("Foutieve keuze")
+~~~cs
+    public int TotalPrice 
+    {      
+        get { return Price * Quantity; }
+    }
 ~~~
 
-Als we dit dan **uittesten** krijgen we volgende output
+Bemerk dat deze property **geen setter** heeft en volledig **afhankelijk** is van de 2 **andere properties**...
+
+#### Opvragen van de hoeveelheid
+
+We zorgen nu 1ste dat de hoeveelheid mee wordt opgevraagd:
+
+~~~cs
+case ("1"):
+    Console.Write("Geef prijs: ");
+    int price = int.Parse(Console.ReadLine());
+
+    Console.Write("Geef omschrijving: ");
+    string description = Console.ReadLine();
+
+    Console.Write("Geef hoeveelheid: ");
+    int quantity = int.Parse(Console.ReadLine());
+
+    items.Add(new BasketItem(price, description, quantity));
+
+    break;
+~~~
+
+#### Print wijzigen
+
+Vervolgens passen we dan de weergave aan zodat die niet enkel de prijs van 1 stuk afdrukt maar ook de prijs van de totaal aantal items.
+
+~~~cs
+case ("2"):
+    foreach (BasketItem item in items)
+    {
+        Console.WriteLine($"{item.Quantity} maal {item.Description} voor {item.Price} per item, totaal {item.TotalPrice}");
+    }
+    break;
+~~~
+
+Als we dit dan **testen** krijgen we volgende output
 
 ~~~
 1> Voeg item toe
 2> Print items af
 3> Sluit af
 1
-Geef beschrijving: Laptop
-Geef prijs: 1000
-Geef hoeveelheid: 2
-
+Geef prijs: 10
+Geef omschrijving: Patatten
+Geef hoeveelheid: 20
 1> Voeg item toe
 2> Print items af
 3> Sluit af
 2
-2 * Laptop  =  2000
-
+20 maal Patatten voor 10 per item, totaal 200
 1> Voeg item toe
 2> Print items af
 3> Sluit af
 3
-Programma wordt beeindigd
+Applicatie sluit af
 ~~~
 
 Test OK, we kunnen vervolgen met onze commit...
 
 #### git: commit
 
-~~~
-$ git commit -m "Adding a quantity to BasketItem"
-[master c4a19e5] Adding a quantity to BasketItem
-1 file changed, 8 insertions(+), 3 deletions(-)
-~~~
+Als git-comment geef je dan iets zoals *"Adding Quantity to BasketItem"*
 
 ### Totaal van de items
 
 Interessant om te weten als gebruiker is de **totaal waarde** van deze items.  
-Hiervoor voegen we een loop toe binnen **event 2**
+We voegen hier een nieuw event toe aan het menu
 
-~~~python
-class BasketItem:
-    def __init__(self, description, itemPrice, quantity = 1):
-        self.description = description
-        self.itemPrice = itemPrice
-        self.quantity = quantity
-    
-    def totalPrice(self):
-        return self.itemPrice * self.quantity
-
-menu = """
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-"""
-
-items = []
-
-while True:
-    menu_input = input(menu)
-    if menu_input == "1":
-        # Request input from user
-        description = input("Geef beschrijving: ")
-        price = int(input("Geef prijs: "))
-        quantity = int(input("Geef hoeveelheid: "))
-        # Append new item
-        items.append(BasketItem(description, price, quantity))
-    elif menu_input == "2":
-        sumOfItems = 0
-        for item in items:
-            print(item.quantity, "*", item.description, " = ", item.totalPrice())
-            sumOfItems = sumOfItems + item.totalPrice()
-        print("Totale waarde:", sumOfItems)
-    elif menu_input == "3":
-        print("Programma wordt beeindigd")
-        exit()
-    else:
-        print("Foutieve keuze")
+~~~cs
+string menu = """
+                1> Voeg item toe
+                2> Print items af
+                3> Totaalprijs
+                4> Sluit af
+                """;
 ~~~
+
+Vervolgens voegen we een **case** voor **3** toe:
+
+~~~cs
+    case ("3"):
+        int totalPrice = 0;
+        foreach (BasketItem item in items)
+        {
+            totalPrice += item.TotalPrice;
+        }
+        Console.WriteLine($"De totale prijs van uw winkelmandje is {totalPrice}");
+        break;
+~~~
+
+Vergeet niet de oude optie 3 (afsluiten) aan te passen naar optie 4 
+
+~~~cs
+    case ("4"):
+        Console.WriteLine("Applicatie sluit af");
+        return;
+~~~
+
+Vervolgens even testen
 
 ~~~
 1> Voeg item toe
 2> Print items af
-3> Sluit af
+3> Totaalprijs
+4> Sluit af
 1
-Geef beschrijving: Laptop
-Geef prijs: 1000
-Geef hoeveelheid: 2
-
+Geef prijs: 10
+Geef omschrijving: Bier
+Geef hoeveelheid: 25
 1> Voeg item toe
 2> Print items af
-3> Sluit af
+3> Totaalprijs
+4> Sluit af
 1
-Geef beschrijving: Harde schijf
-Geef prijs: 250
-Geef hoeveelheid: 3
-
+Geef prijs: 5   
+Geef omschrijving: Cola
+Geef hoeveelheid: 15
 1> Voeg item toe
 2> Print items af
-3> Sluit af
-2
-2 * Laptop  =  2000
-3 * Harde schijf = 750
-Totaal: 2750
-
-1> Voeg item toe
-2> Print items af
-3> Sluit af
+3> Totaalprijs
+4> Sluit af
 3
-Programma wordt beeindigd
+De totale prijs van uw winkelmandje is 325
+1> Voeg item toe
+2> Print items af
+3> Totaalprijs
+4> Sluit af
+4
+Applicatie sluit af
 ~~~
 
 De test is geslaagd...
 
+
 #### git: volgend commit...
 
-...We kunnen dit **committen**
+...We kunnen dit **committen** met de boodschap "Adding a total price for the basket"
 
-~~~
-$ git commit -m "Adding total-value"
-[master 88f498e] Adding total-value
- 1 file changed, 3 insertions(+)
-~~~
-
-### Aparte Basket-klasse bouwen
-
-Een kleine **optimalisatie** is het isoleren van het beheer van verschillende items in een binnen een aparte klasse.  We noemen deze klasse **Basket**
-
-Dit laat ons toe van de logica rond het beheer van items te isoleren op 1 plek (namelijk in de klasse Basket)
-Dit zou ook interessant zijn voor de toekomst als we binnen een applicatie meerdere winkelmandjes will bijhouden (bijvoorbeeld voor verschillende gebruikers).
-
-Deze klasse bevat:
-
-* Een **lijst** met **items**
-* Een functie om een **item toe te voegen**
-* Een functie om de **totale prijs** te berekenen
-
-~~~python
-class BasketItem:
-    def __init__(self, description, itemPrice, quantity = 1):
-        self.description = description
-        self.itemPrice = itemPrice
-        self.quantity = quantity
-    
-    def totalPrice(self):
-        return self.itemPrice * self.quantity
-
-class Basket:
-    items = []
-
-    def addItem(self, item):
-        self.items.append(item)
-
-    def getItems(self):
-        return self.items
-
-    def totalValueOfItems(self):
-        totalValue = 0
-        for item in self.items:
-            totalValue = totalValue + item.totalPrice()
-        return totalValue
-
-basket = Basket()
-
-menu = """
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-"""
-
-while True:
-    menu_input = input(menu)
-    if menu_input == "1":
-        # Request input from user
-        description = input("Geef beschrijving: ")
-        price = int(input("Geef prijs: "))
-        quantity = int(input("Geef hoeveelheid: "))
-        # Append new item
-        basket.addItem(BasketItem(description, price, quantity))
-    elif menu_input == "2":
-        for item in basket.getItems():
-            print(item.quantity, "*", item.description, " = ", item.totalPrice())
-        print("Totale waarde:", basket.totalValueOfItems())
-    elif menu_input == "3":
-        print("Programma wordt beeindigd")
-        exit()
-    else:
-        print("Foutieve keuze")
-~~~
-
-We **herhalen** de **test** van het voorgaande deel en zien dat de code nog altijd werkt (geen regressie)
-
-~~~
-...
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-2
-2 * Laptop  =  2000
-3 * Harde schijf = 750
-Totaal: 2750
-...
-~~~
-
-#### git: committen maar...
-
-~~~
-git commit -m "Adding Basket-class to manage group of items"
-[master 943f10f] Adding Basket-class to manage group of items
- 1 file changed, 20 insertions(+), 7 deletions(-)
-~~~
-
-### Error-handling: Vermijden van negatieve ingaves
-
-Tot nog toe hebben we geen controles uitgevoerd op negatieve waardes.  
-We passen de volgende regels toe:
-
-* Enkel een hoeveelheid toelaten > 0
-* Enkel een prijs toelaten >= 0
-
-We gaan deze controles toevoegen in de klasse Basket.  
-
-Het idee is om vanuit de constructor een exceptie op te werpen om te vermijden dat er een item kan aangemaakt met de verkeerde data.
-
-Om deze excepties op type te kunnen opvangen maken we 2 specifieke exceptie-klasses aan
- (1tje voor elke fout).  
-Deze excepties worden dan opgevangen binnen de eventloop en een boodschap wordt afgedrukt bij fout.
-
-~~~python
-class InvalidQuantityException(Exception):
-    pass
-
-class InvalidItemPriceException(Exception):
-    pass
-
-class BasketItem:
-    def __init__(self, description, itemPrice, quantity = 1):
-        if quantity <= 0:
-            raise InvalidQuantityException()
-
-        if itemPrice < 0:
-            raise InvalidQuantityException()
-        
-        self.description = description
-        self.itemPrice = itemPrice
-        self.quantity = quantity
-    
-    def totalPrice(self):
-        return self.itemPrice * self.quantity
-
-class Basket:
-    items = []
-
-    def addItem(self, item):
-        self.items.append(item)
-
-    def getItems(self):
-        return self.items
-
-    def totalValueOfItems(self):
-        totalValue = 0
-        for item in self.items:
-            totalValue = totalValue + item.totalPrice()
-        return totalValue
-
-basket = Basket()
-
-menu = """
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-"""
-
-while True:
-    menu_input = input(menu)
-    if menu_input == "1":
-        try:
-            # Request input from user
-            description = input("Geef beschrijving: ")
-            price = int(input("Geef prijs: "))
-            quantity = int(input("Geef hoeveelheid: "))
-            # Append new item
-            basket.addItem(BasketItem(description, price, quantity))
-        except InvalidQuantityException:
-            print(quantity, "is geen geldige hoeveelheid")
-        except InvalidItemPriceException:
-            print(price, "is geen geldige prijs")
-    elif menu_input == "2":
-        for item in basket.getItems():
-            print(item.quantity, "*", item.description, " = ", item.totalPrice())
-        print("Totale waarde:", basket.totalValueOfItems())
-    elif menu_input == "3":
-        print("Programma wordt beeindigd")
-        exit()
-    else:
-        print("Foutieve keuze")
-~~~
-
-~~~
-...
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-1
-Geef beschrijving: Laptop 
-Geef prijs: -1000
-Geef hoeveelheid: 10 
-10 is geen geldige prijs
-
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-1
-Geef beschrijving: Laptop
-Geef prijs: 1000
-Geef hoeveelheid: -10
--10 is geen geldige hoeveelheid
-...
-~~~
-
-#### Git commit...
-
-~~~
-$ git commit -m "Exception handling, avoid negative values"
-[master 8176859] Exception handling, avoid negative values
- 1 file changed, 27 insertions(+), 6 deletions(-)
-~~~
-
-### Error-handling: Opvangen van niet int-getallen
-
-Als we momenteel geen getal in voeren voor hoeveelheid of prijs zal de applicatie crashen.  
-We zullen dit opvangen door ook ValueError-exceptie op te vangen binnen de event-loop.
-
-~~~python
-class InvalidQuantityException(Exception):
-    def QuantityException():
-        pass
-
-class InvalidItemPriceException(Exception):
-    def InvalidQuantityException():
-        pass
-
-class BasketItem:
-    def __init__(self, description, itemPrice, quantity = 1):
-        if quantity <= 0:
-            raise InvalidQuantityException()
-
-        if itemPrice < 0:
-            raise InvalidQuantityException()
-        
-        self.description = description
-        self.itemPrice = itemPrice
-        self.quantity = quantity
-    
-    def totalPrice(self):
-        return self.itemPrice * self.quantity
-
-class Basket:
-    items = []
-
-    def addItem(self, item):
-        self.items.append(item)
-
-    def getItems(self):
-        return self.items
-
-    def totalValueOfItems(self):
-        totalValue = 0
-        for item in self.items:
-            totalValue = totalValue + item.totalPrice()
-        return totalValue
-
-basket = Basket()
-
-menu = """
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-"""
-
-while True:
-    menu_input = input(menu)
-    if menu_input == "1":
-        try:
-            # Request input from user
-            description = input("Geef beschrijving: ")
-            price = int(input("Geef prijs: "))
-            quantity = int(input("Geef hoeveelheid: "))
-            # Append new item
-            basket.addItem(BasketItem(description, price, quantity))
-        except InvalidQuantityException:
-            print(quantity, "is geen geldige hoeveelheid")
-        except InvalidItemPriceException:
-            print(price, "is geen geldige prijs")
-        except ValueError:
-            print("Gelieve een geldige waarde ingeven")
-    elif menu_input == "2":
-        for item in basket.getItems():
-            print(item.quantity, "*", item.description, " = ", item.totalPrice())
-        print("Totale waarde:", basket.totalValueOfItems())
-    elif menu_input == "3":
-        print("Programma wordt beeindigd")
-        exit()
-    else:
-        print("Foutieve keuze")
-~~~
-
-#### git: ...nog een commit...
-
-Vanzelfsprekend voeren we een nieuwe commit uit:
-
-~~~
->git commit -m "Intercepting non-numeric values for user input"
-[master 9eedf57] Intercepting non-numeric values for user input
- 1 file changed, 2 insertions(+), 2 deletions(-)
-~~~
-
-### En verder... voor de student
-
-We gaan deze oefening in latere hoofdstukken verderzetten al leidraad:
-
-* Aanmaken van modules
-* Werken met test-frameworks
-* GUI met TKInter
-* Webinteface
-* Persistentie in een database
-* ...
-
-#### Git
-
-Dit voorbeeld is als zip downloadbaar in de cursus.  
-Download deze en probeer via de commando's **"git log"** en "git show <commit-id>" dit voorbeeld te bestuderen en wat handigheid op te bouwen met Git zelf.
-
-#### Uitbreidingsoefeningen
-
-Daarnaast kunnen er nog veel verbeteringen worden toegevoegd:
-
-* Verwijderen van een item
-* Wijzigen van de hoeveelheid
-* Meerdere baskets aanmaken
-* Toevoegen van klant-data
-* ...
-
-Probeer deze stap-gewijs toe te voegen

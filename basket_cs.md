@@ -544,7 +544,7 @@ De **user-input** wordt gevraagd en **opgevangen**, maar er is nog **meer nodig*
 ##### En nog een commit...
 
 Maak nu een commit waarin je deze code commit.  
-Geen hierbij een duidelijke boodschap zoals bijvoorbeeld "Opzetten van event-loop met menu"
+Geen hierbij een duidelijke boodschap zoals bijvoorbeeld "Setting up event-loop with basic menu"
 
 #### Event-loop (if-else)
 
@@ -567,7 +567,7 @@ Hiervoor plaatsen we een **if/elif-clausule** voor elke **menu-optie**.
     }
 ~~~
 
-Voorlopig printen we een **tijdelijke TODO-boodschap** waarmee we kunnen **testen** of onze event-loop correct werkt.   
+Voorlopig printen we een **tijdelijke TODO-boodschap** waarmee we kunnen **testen** of onze event-loop correct werkt.  
 We voeren even een **korte test** uit zoals hieronder...
 
 ~~~
@@ -594,87 +594,32 @@ Foutieve keuze
 ...en zien dat de boodschappen worden afgeprint overeenkomstig de keuzes.  
 Het **basis-skelet** van onze **event-loop** lijkt **ok** te zijn.  
 
-> **Belangrijk:**  
-> Voer deze code uit met **Python 3**, met Python 2 zal deze code niet correct runnen.  
-> Later in de cursus komen we nog terug op deze verschillen.
 
 ##### En nog een commit...
 
-Een nieuwe fase van onze ontwikkeling is **ontwikkeld** en **getest**, we gaan nu deze **code-wijziging** toevoegen aan onze **git-repo**.
-
-Als we de status opvragen geeft git aan dat er een nieuwe wijziging is.  
-
-~~~
-$ git status
-On branch master
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git checkout -- <file>..." to discard changes in working directory)
-
-        modified:   basket.py
-
-no changes added to commit (use "git add" and/or "git commit -a")
-~~~
-
-Wij hebben deze **wijziging** echter **nog niet klaargezet** voor de commit.  
-Hier voor gebruiken we opnieuw het commando **"git add"**
-
-~~~
-$ git add basket.py
-$ git status
-On branch master
-Changes to be committed:
-  (use "git reset HEAD <file>..." to unstage)
-
-        modified:   basket.py
-~~~
-
-De status geeft nu aan dat deze kan **gecommit** worden.  
-We doen dit opnieuw met een korte maar duidelijke boodschap.
-
-~~~
-$ git commit -m "Setup of basic event-loop and -menu"
-[master ecc9bc7] Setup of basic event-loop and -menu
- 1 file changed, 20 insertions(+), 1 deletion(-)
-~~~
-
-Merk op dat onze **git-historiek** nu ook **2** commits bevat
-
-~~~
-$ git log
-commit ecc9bc7dea83661149a7c5bd9942f1b36c8d6e54
-Author: Bart Voet <bart_voet@telenet.be>
-Date:   Sun Jan 10 21:20:20 2021 +0100
-
-    Setup of basic event-loop and -menu
-
-commit 6e8de9336064b7c7b7ff1c5e3ebff40a068efb7b
-Author: Bart Voet <bart_voet@telenet.be>
-Date:   Sun Jan 10 19:43:15 2021 +0100
-
-    Creating class BasketItem.py
-~~~
-
-> **Opdracht voor de student:**  
-> Probeer nu even de **wijzigingen** te **bestuderen** van elke commit via git show <commit-id>  
-> Normaal gezien is het voldoende van enkel de eerste 4/5 letter van je commit-id te typen.
+Maak nu een commit waarin je deze code commit.  
+Geen hierbij een duidelijke boodschap zoals bijvoorbeeld *"Feedback within event-loop for each item"*
 
 ### Code schrijven: programma/event-loop beëindigen
 
 Tot nog toe moesten we ons eerste programma afsluiten met **ctrl+c**  
 Het eerste event dat we al kunnen afwerken is **"3> Sluit af"** opdat we het programma op een elegante manier kunnen afwerken.
 
-Hiervoor gebruiken we de **python-functie exit()** die er zal voor zorgen dat het programma wordt afgesloten.
+Hiervoor stoppen we het programma door uit de **main-functie** een **return** uit te voeren, dat zal er voor zorgen dat het programma wordt afgesloten.
 
-~~~python
+~~~cs
     switch(menuChoice)
     {
         case("1"): Console.WriteLine("TODO: voeg item toe");break;
         case("2"): Console.WriteLine("TODO: print item toe");break;
-        case("3"): Console.WriteLine("Het programma wordt beeindigd"); return;
+        case("3"): Console.WriteLine("Applicatie sluit af");return;
         default: Console.WriteLine("Foutieve keuze");break;
     }
 ~~~
+
+> Bemerk ook dat je hier de break door een return vervangt (gezien bij return de break niet veel zin meer heeft)
+
+En vervolgens testen we:
 
 ~~~
 1> Voeg item toe
@@ -684,90 +629,20 @@ Hiervoor gebruiken we de **python-functie exit()** die er zal voor zorgen dat he
 Het programma wordt beeindigd
 ~~~
 
+##### En nog een commit...
 
-#### git: diff en nog commit's
+Maak nu een commit waarin je deze code commit.  
+Geen hierbij een duidelijke boodschap zoals bijvoorbeeld *"Implementing menu-item exit"*
 
-We gaan deze wijziging/progress ook **bewaren** in de git-repo.  
-Alvorens dit te doen, gebruiken we het **"git diff"**-commando om te inspecteren wat we hebben gewijzigd tov de vorige commit.
+### Git Historiek en Commit-id's
 
-~~~
-$ git diff
-diff --git a/basket.py b/basket.py
-index fa85624..c923bc3 100644
---- a/basket.py
-+++ b/basket.py
-@@ -17,6 +17,7 @@ while True:
-     elif menu_input == "2":
-         print("TODO: Print item af")
-     elif menu_input == "3":
--        print("TODO: Sluit de applicatie af")
-+        print("Programma wordt beeindigd")
-+        exit()
-     else:
-         print("Foutieve keuze")
-\ No newline at end of file
-~~~
+We we zien dat de **git-historiek** zich langzaam maar zeker begint **op te bouwen** ondertussen.  
+In git spreken we dan ook van een **history**, letterlijk een historiek van commits
 
-Dit geeft een vergelijkbaar rapport zoals we dit eerder hebben gezien voor **"git show"**.  
-Het toont ons dat tov de vorige commit:
+![](git-history.png)
 
-* **1 lijn** is **verwijderd** (aangeduid met **-**)
-
-~~~
--        print("TODO: Sluit de applicatie af")
-~~~
-
-* **2 lijnen** zijn **toegevoegd** (aangeduid met **+**)
-
-~~~
-+        print("Programma wordt beeindigd")
-+        exit()
-~~~
-
-* Ook wordt er aangeduid **waar** in de code dat **deze wijzigingen** kunnen gevonden worden
-    * de file basket.py
-    * ergens vanaf op lijn 17
-
-~~~
---- a/basket.py
-+++ b/basket.py
-@@ -17,6 +17,7 @@
-~~~
-
-We **voegen** deze **commit toe**...
-
-~~~
-$ git add basket.py 
-$ git commit -m "Implementing exit-event"
-[master a29a73a] Implementing exit-event
- 1 file changed, 2 insertions(+), 1 deletion(-)
-$ git log
-commit a29a73a734df309ea2a221c778729c74d99d63a5
-Author: Bart Voet <bart_voet@telenet.be>
-Date:   Sun Jan 10 22:09:05 2021 +0100
-
-    Implementing exit-event
-:...skipping...
-commit a29a73a734df309ea2a221c778729c74d99d63a5
-Author: Bart Voet <bart_voet@telenet.be>
-Date:   Sun Jan 10 22:09:05 2021 +0100
-
-    Implementing exit-event
-
-commit ecc9bc7dea83661149a7c5bd9942f1b36c8d6e54
-Author: Bart Voet <bart_voet@telenet.be>
-Date:   Sun Jan 10 21:20:20 2021 +0100
-
-    Setup of basic event-loop and -menu
-
-commit 6e8de9336064b7c7b7ff1c5e3ebff40a068efb7b
-Author: Bart Voet <bart_voet@telenet.be>
-Date:   Sun Jan 10 19:43:15 2021 +0100
-
-    Creating class BasketItem.py
-~~~
-
-...en we zien dat de **git-historiek** zich langzaam maar zeker begint **op te bouwen**
+Bemerk ook dat deze **commits** allen een **id** hebben dit is een unieke (hash-)code voor je commit
+die je achter kan gebruiken om een specifieke commit te identifieren voor diverse operaties
 
 ### Code schrijven: Afdrukken van items
 
@@ -781,76 +656,51 @@ In **deze wijziging/commit** gaan we deze **lijst afdrukken**, gezien we echter 
 > In een volgende les gaan we meer geavanceerde technieken zien om onze code te testen
 > (en deze testen zelf te automatiseren)
 
-~~~python
-class BasketItem:
-    description = ""
-    itemPrice = 0
+We **voegen** deze **code** **toe** boven de **event-loop**
 
-menu = """
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-"""
+~~~cs
+        items.Add(new BasketItem(10, "Patatten"));
+        items.Add(new BasketItem(20, "Bloemkool"));
 
-items = []
-# Temporary list/will be removed later on
-an_item = BasketItem()
-an_item.description = "Laptop"
-an_item.itemPrice = 1000
-items.append(an_item)
-
-an_item = BasketItem()
-an_item.description = "USB-stick"
-an_item.itemPrice = 10
-items.append(an_item)
-
-while True:
-    menu_input = input(menu)
-    if menu_input == "1":
-        print("TODO: Voeg item toe")
-    elif menu_input == "2":
-        for item in items:
-            print(item.description, "voor prijs", item.itemPrice)
-    elif menu_input == "3":
-        print("Programma wordt beeindigd")
-        exit()
-    else:
-        print("Foutieve keuze")
+        while (true)
 ~~~
 
 Onder **optie 2** voegen we vervolgens een **loop** toe die deze **items afdrukt**.  
 
+~~~cs
+        switch (menuChoice)
+        {
+            case ("1"): Console.WriteLine("TODO: voeg item toe"); break;
+            case ("2"):
+                foreach (BasketItem item in items)
+                {
+                    Console.WriteLine($"{item.Description} voor {item.Price} als prijs");
+                }
+                break;
+            case ("3"): Console.WriteLine("Applicatie sluit af"); return;
+            default: Console.WriteLine("Foutieve keuze"); break;
+        }
 ~~~
-$ python basket.py 
 
+Als we even testen
+
+~~~
 1> Voeg item toe
 2> Print items af
 3> Sluit af
 2
-Laptop voor prijs 1000
-USB-stick voor prijs 10
-
+Patatten voor 10 als prijs
+Bloemkool voor 20 als prijs
 1> Voeg item toe
 2> Print items af
 3> Sluit af
 3
-Programma wordt beeindigd
-$
+Applicatie sluit af
 ~~~
-
-Als we deze testen zien we dat de **hardcoded lijst** wordt **afgedrukt**, dus onze test is uitgevoerd dus we kunnen **revisioneren**
-
 
 #### git: ... volgende commit
 
-We voegen onze **wijzigingen** toe aan de git repo met een commit:
-
-~~~
-$ git add basket.py
-$ git commit -m "Printing the available items"
-[master 07d49e9] Printing the available items
- 1 file changed, 12 insertions(+), 1 deletion(-)
-~~~ 
+We voegen onze **wijzigingen** toe aan de git repo met een commit *"Printing the current menu-items"*
 
 ### Code schrijven: items toevoegen
 
@@ -861,72 +711,49 @@ We doen dit door **event 1** te **implementeren** door de 3 volgende taken te im
 * **Maak BasketItem-object** aan met input
 * Voeg BasketItem-object toe aan **lijst**
 
-> We verwijderen hierbij ook de eerder aangemaakte **hard-coded** lijst
+* Stap 1: We **verwijderen** hierbij ook de eerder aangemaakte **hard-coded** lijst
+* Stap 2: We **vragen** de **prijs** en **beschrijving** op en **voegen** deze als object **toe** aan de lijst
 
-~~~python
-class BasketItem:
-    description = ""
-    itemPrice = 0
 
-menu = """
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-"""
 
-items = []
+~~~cs
+    case ("1"):
+        Console.Write("Geef prijs: ");
+        int price = int.Parse(Console.ReadLine());
 
-while True:
-    menu_input = input(menu)
-    if menu_input == "1":
-        # Request input from user
-        description = input("Geef beschrijving: ")
-        price = int(input("Geef prijs: "))
-        # Create item
-        item = BasketItem()
-        item.description = description
-        item.itemPrice = price
-        # Append new item
-        items.append(item)
-    elif menu_input == "2":
-        for item in items:
-            print(item.description, "voor prijs", item.itemPrice)
-    elif menu_input == "3":
-        print("Programma wordt beeindigd")
-        exit()
-    else:
-        print("Foutieve keuze")
+        Console.Write("Geef omschrijving: ");
+        string description = Console.ReadLine();
+
+        items.Add(new BasketItem(price, description));
+
+        break;
 ~~~
 
-Als we dit uittesten:
+Als we dit **uittesten**:
 
 ~~~
-$ python basket.py 
-
 1> Voeg item toe
 2> Print items af
 3> Sluit af
 1
-Geef beschrijving: Laptop
-Geef prijs: 1000
-
+Geef prijs: 20
+Geef omschrijving: Frieten
 1> Voeg item toe
 2> Print items af
 3> Sluit af
 1
-Geef beschrijving: Harde schijf
-Geef prijs: 200
-
+Geef prijs: 25
+Geef omschrijving: Ijsjes
 1> Voeg item toe
 2> Print items af
 3> Sluit af
 2
-Laptop voor prijs 1000
-Harde schijf voor prijs 200
-
+Frieten voor 20 als prijs
+Ijsjes voor 25 als prijs
 1> Voeg item toe
 2> Print items af
 3> Sluit af
+3
 ~~~
 
 De test is uitgevoerd:
@@ -936,69 +763,7 @@ De test is uitgevoerd:
 
 #### git: ... volgende commit
 
-We **voegen** onze wijzigingen **toe** aan de **git** repo:
-
-~~~
-$ git add basket.py
-$ git commit -m "Adding items to the basket"
-[master 94df14f] Adding items to the basket
- 1 file changed, 9 insertions(+), 11 deletions(-)
-~~~ 
-
-### Code schrijven: constructor toevoegen
-
-We voegen een **refactoring/code-optimalisatie** toe, we maken een **constructor**.  
-Zoals we eerder hebben gezien kunnen we deze **constructor** gebruiken om deze attributen **in 1 maal** volledig te initialiseren.
-
-> Dit verkort het aantal lijnen in optie 1 gevoelig
-
-~~~python
-class BasketItem:
-    def __init__(self, description, itemPrice):
-        self.description = description
-        self.itemPrice = itemPrice
-
-menu = """
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-"""
-
-items = []
-
-while True:
-    menu_input = input(menu)
-    if menu_input == "1":
-        # Request input from user
-        description = input("Geef beschrijving: ")
-        price = int(input("Geef prijs: "))
-        # Append new item
-        items.append(BasketItem(description, price))
-    elif menu_input == "2":
-        for item in items:
-            print(item.description, "voor prijs", item.itemPrice)
-    elif menu_input == "3":
-        print("Programma wordt beeindigd")
-        exit()
-    else:
-        print("Foutieve keuze")
-~~~
-
-> De code wordt hierdoor gecondenseerd zonder aan leesbaarheid in te winnen.  
-
-We voeren opnieuw dezelfde test uit die we bij de vorige commit hadden uitgevoerd en zien dat onze code nog altijd naar behoren werkt (geen regressie).
-
-
-#### git: ...volgende commit
-
-We kunnen dus opnieuw een  commit toevoegen hiervoor met een korte duidelijke boodschap:
-
-~~~
-$ git add basket.py
-$ git commit -m "Provide constructor for BasketItem"
-[master 5d7122b] Provide constructor for BasketItem
- 1 file changed, 4 insertions(+), 8 deletions(-)
-~~~
+We **voegen** onze wijzigingen **toe** aan de **git** repo met de commit-boodschap *"Adding new items"*
 
 ### Code schrijven: Voeg een attribuut quantity toe
 

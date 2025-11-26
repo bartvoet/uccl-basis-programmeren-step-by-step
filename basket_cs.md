@@ -225,7 +225,7 @@ Hier druk je op de knop "Create repository".
 
 ![](git_new_repo_vs_3.png)
 
-Dit command zal een lokale git-repository aan:
+Dit command zal een lokale git-repository aan, als het volgende command in de terminal type zie je dat er wat nieuwe folders zijn aangemaakt:
 
 ~~~bash
 bart@linuxcomputers:~/Demo/PRB.ShoppingBasket.Bart$ ls -la

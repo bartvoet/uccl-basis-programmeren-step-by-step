@@ -284,7 +284,7 @@ In dit geval zie je dat er 3 files zijn toegevoegd, de **A** opzij aan de files 
 
 ## Code schrijven (deel 1): klasses, objecten en properties
 
-In dit 1ste deel gaan een kleine basis applicatie bouwen
+In dit 1ste deel gaan een kleine basis applicatibouwen
 
 ### Basket-item-class
 
@@ -955,3 +955,6 @@ De test is geslaagd...
 
 ...We kunnen dit **committen** met de boodschap "Adding a total price for the basket"
 
+## Code schrijven (deel 2): Encapsulatie, compositie en error handling
+
+2de deel komt eraan...

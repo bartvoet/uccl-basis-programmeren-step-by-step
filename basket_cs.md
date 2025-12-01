@@ -915,7 +915,7 @@ Vergeet niet de oude optie 3 (afsluiten) aan te passen naar optie 4
         return;
 ~~~
 
-Vervolgens even testen
+Vervolgens even **testen**:
 
 ~~~
 1> Voeg item toe
@@ -951,10 +951,343 @@ Applicatie sluit af
 De test is geslaagd...
 
 
-#### git: volgend commit...
+#### git: volgende commit...
 
 ...We kunnen dit **committen** met de boodschap "Adding a total price for the basket"
 
 ## Code schrijven (deel 2): Encapsulatie, compositie en error handling
 
-2de deel komt eraan...
+### Optimalisatie: Extractie naar functie inlezen
+
+#### Extractie naar aparte functie
+
+We starten met functies te gebruik om repetitie in de code te vermijden.
+Dit kunnen we doen door de het lezen van string en int in aparte functies te steken.
+
+~~~cs
+public static int ReadString(string message)
+{
+    Console.WriteLine($"{message}: ");
+    return Console.ReadLine();
+}
+~~~
+
+~~~cs
+public static int ReadInt(string message)
+{
+    Console.WriteLine($"{message}: ");
+    int result = int.ParseInt(Console.ReadLine());
+    return result;
+}
+~~~
+
+#### Hergebruik
+
+Nog idealer is dat we onze ReadInt kunnen optimaliseren door ReadString te hergebruiken.
+
+~~~cs
+    public static int ReadInt(string message)
+    {
+        return result = int.Parse(ReadString(message));
+    }
+~~~
+
+#### Blijven vragen tot getal 
+
+Het probleem is nu dat als we iets inlezen dat geen getal is we een **error**
+krijgen zoals hieronder geïllustreerd:
+
+~~~
+1> Voeg item toe
+2> Print items af
+3> Sluit af
+1
+Geef prijs: a2
+Unhandled exception. System.FormatException: The input string 'a2' was not in a correct format.
+   at System.Number.ThrowFormatException[TChar](ReadOnlySpan`1 value)
+   at System.Int32.Parse(String s)
+   at PRB.ShoppingBasket.Bart.Program.Main(String[] args) in C:\Users\bart\source\repos\PRB.ShoppingBasket.Bart\PRB.ShoppingBasket.Bart\Program.cs:line 35
+~~~
+
+Meer specifiek krijgen we een **ThrowFormatException**.  
+Om dit te vermijden kan je voor dit type exception een **try-catch** om deze op te vangen.   
+
+~~~cs
+try 
+{
+    string result = int.Parse(ReadString(message));
+} 
+catch(ThrowFormatException e)
+{
+    Console.WriteLine("Foutieve ingave, dit is geen nummer");
+}
+~~~
+
+In dit geval **combineren** we dit dan met een **loop** die deze **informatie** 
+blijft **opvragen** (maar wel zorgen dat we een duidelijke boodschap hebben)
+totdat de gebruiker dit goed ingeeft...
+
+~~~cs
+public static int ReadInt(string message)
+{
+    while (true);
+    { 
+        try 
+        {
+            return int.Parse(ReadString(message));
+        } 
+        catch(FormatException e)
+        {
+            Console.WriteLine("Foutieve ingave, dit is geen nummer");
+        }
+    }
+}
+~~~
+
+#### TryParse gebruiken met loop
+
+Er is echter een alternatief op bovenstaande code en dat de functie **TryParse**.  
+int.TryParse zal voor jou:
+
+* een **string** waarde converteren naar een **integer**
+* een **boolean** teruggeven die aangeeft of de conversie geslaagd is (ipv een exceptie op te werpen)
+
+Hieronder zie je het gebruik van int.Parse binnen de ReadInt-functie
+
+~~~cs
+public static int ReadInt(string message)
+{
+    int result;
+    while (!int.TryParse(ReadString(message), out result));
+    {
+        Console.WriteLine("Foutieve ingave, dit is geen nummer");
+    }
+    return result;
+}
+~~~
+
+Hier wordt er gebruik gemaakt van een **speciaal keyword** **out**.  
+Dit keyword wordt gebruikt om een integer of andere primitieve (niet objecten) door
+te geven als referentie (in tegenstelling tot wat we tot nog toe hebben gezien.)
+
+In tegenstelling tot wat we hebben gezien kan er nu een **int** (primitieve) worden 
+meegeven als **referentie** (zoals we dat kennen van objecten).
+
+(achter de schermen zal dit een een soort van pointer vormen naar de bovenliggende stack)
+
+#### Aanpassen van Program.cs
+
+Hierdoor hebben we **2 vliegen in 1 klap** gevangen:
+
+* We **vermijden** dat het programma zal **crashen** (door excepties)
+* Onze code in de Program-klasse wordt nu wat **gereduceerd** en is ook **duidelijker** doordat de functies een duidelijk naam hebben
+
+Vergeet dus - zoals hieronder - niet de **code** in de **1ste case aan te passen**
+
+~~~cs
+int price = ReadInt("Geef prijs: ");
+string description = ReadString("Geef omschrijving: ");
+int quantity = ReadInt("Geef hoeveelheid: ");
+~~~
+
+#### Commit maken
+
+En maak vervolgens een **commit** met de boodschap *"Extracting read-logic to separate functions"*
+
+### Defensief programmeren: geen negatieve bedragen
+
+De volgende stap - in het defensief programmeren - is er voor te zorgen dat in onze logica
+**geen negatieve bedragen** terecht kunnen komen.
+
+Deze **controle** gaan we inlassen in onze **BasketItem**-klasse door een **exceptie** op te werpen wanneer deze wordt geïnitialiseerd of gewijzigd met een negatieve waarde (prijs of hoeveelheid)
+
+#### Excepties maken
+
+We maken hiervoor een **specifieke exceptie** aan die we gaan **opwerpen** vanuit onze **property-setters**.  
+
+Definieer hiervoor de **volgende exceptie-klasse**:
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class NoNegativeAmountAllowed : Exception
+    {
+        public NoNegativeAmountAllowed(string element) : base("No negative amount allowed")
+        { 
+            Element = element;
+        }
+
+        public Element {get;private set;}
+    }
+}
+~~~
+
+#### Exceptie werpen
+
+Deze exceptie zal dus moet worden opgeworpen worden vanuit onze property-setter.
+
+Om dit te kunnen doen moeten we echter onze "lazy"-setter veranderen door
+een "Field Backed Property"
+
+Dit  houdt in dat je 2 velden (geen properties) dient bij te houden in je klasse die dan
+je property ondersteunen:
+
+> C# heeft de naming-conventie om zulke properties te laten starten met een **underscore**
+
+~~~cs
+public class BasketItem
+{
+    private int _price;
+    private int _quantity;
+    //...
+
+    public int Price
+    {
+        get
+        {
+            return _price;
+        }
+        private set
+        {
+            if (value < 0)
+            {
+                throw new NoNegativeAmountAllowed("prijs");
+            }
+            _price = value;
+        }
+    }
+    //... zelfde voor quantity...
+}
+~~~
+ 
+Daarbij moet je dan een controle toevoegen voor de Price-property.
+
+~~~cs
+public class BasketItem
+{
+    //... 
+    public int Price
+    {
+        
+        get
+        {
+            return _price;
+        }
+        private set
+        {
+            if (value < 0)
+            {
+                throw new NoNegativeAmountAllowed("prijs");
+            }
+            _price = value;
+        }
+    }
+    //... zelfde voor quantity...
+}
+~~~
+
+Doe nu ook hetzelfde voor de Quantity-property maar let op dat je daar de string "prijs"
+door "hoeveelheid" verandert.
+
+> Zie ook https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/properties voor wat meer verdieping
+
+#### Excepties opvangen
+
+Eénmaal deze controles toegevoegd kan je nu **opvangen** binnen de **Program**-code zoals hieronder:
+
+~~~cs
+
+case ("1"):
+    int price = ReadInt("Geef prijs: ");
+    string description = ReadString("Geef omschrijving: ");
+    int quantity = ReadInt("Geef hoeveelheid: ");
+    try
+    {
+        items.Add(new BasketItem(price, description, quantity));
+    }    
+    catch(NoNegativeAmountAllowed e)
+    {
+        Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}")
+    }
+
+    break;
+~~~
+
+We drukken ook de extra property Element mee af om het onderscheid te kunnen maken
+tussen de verschillende velden in de boodschap
+
+#### En committen maar...
+
+Zorg nu voor een commit met de boodschap *"Disallow negative price or quantity"*
+
+## Code schrijven (deel 3): Modularisatie en lagen
+
+### Modularisatie door Compositie: Basket-klasse maken
+
+Het is de 
+
+
+Kunnen meerdere objecten in je programma
+Je kan logica rond deze Basket implmenteren
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class Basket
+    {
+        public List<BasketItem> Items {get;private set;} = new List<BasketItem>();
+
+        public void AddNewItem(BasketItem item)
+        {
+            Items.Add(item);
+        }
+    }
+}
+~~~
+
+> Geen Console.WriteLine in klasses met logica, enkel in main
+> Waarom herbruikbaarheid!!!
+
+
+### Increment/Decrement
+
+We starten met onze BasketItem-klasse uit te breiden met 2 **methodes**, namelijk
+**IncrementQuantity** en **DecrementQuantity** die de hoeveel met 1-tje naar boven
+of beneden brengen.
+
+#### Methodes toevoegen
+
+~~~cs
+public IncrementQuantity()
+{
+    Quantity++;
+}
+
+public DecrementQuantity()
+{
+    Quantity--;
+}
+~~~
+
+> Let wel dat je hier op een bepaald moment op een negatief getal kan 
+> komen.  Dit wordt echter gecontroleerd met als gevolg een exception
+> die we dan ook gaan opvangen in het menu...
+
+#### Menu-items toevoegen
+
+
+#### 
+
+
+## Code schrijven (deel 4): Overerving en polymorfisme
+
+### Verschillende soorten van items
+
+### ToString() gebruiken
+
+## Code schrijven (deel 4): Abstracties en interfaces
+
+### BasketItem abstract maken
+
+### IBasketItem toevoegen
+

@@ -986,10 +986,10 @@ public static int ReadInt(string message)
 Nog idealer is dat we onze ReadInt kunnen optimaliseren door ReadString te hergebruiken.
 
 ~~~cs
-    public static int ReadInt(string message)
-    {
-        return result = int.Parse(ReadString(message));
-    }
+public static int ReadInt(string message)
+{
+    return result = int.Parse(ReadString(message));
+}
 ~~~
 
 #### Blijven vragen tot getal 
@@ -1186,8 +1186,8 @@ public class BasketItem
 }
 ~~~
 
-Doe nu ook hetzelfde voor de Quantity-property maar let op dat je daar de string "prijs"
-door "hoeveelheid" verandert.
+Doe nu ook **hetzelfde** voor de **Quantity-property** maar let op dat je daar de string "prijs"
+door "hoeveelheid" verandert!!
 
 > Zie ook https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/properties voor wat meer verdieping
 
@@ -1224,11 +1224,8 @@ Zorg nu voor een commit met de boodschap *"Disallow negative price or quantity"*
 
 ### Modularisatie door Compositie: Basket-klasse maken
 
-Het is de 
-
-
 Kunnen meerdere objecten in je programma
-Je kan logica rond deze Basket implmenteren
+Je kan logica rond deze Basket implementeren
 
 ~~~cs
 namespace PRB.ShoppingBasket.Bart
@@ -1273,11 +1270,59 @@ public DecrementQuantity()
 > komen.  Dit wordt echter gecontroleerd met als gevolg een exception
 > die we dan ook gaan opvangen in het menu...
 
+#### Opzoeking BasketItem
+
+~~~cs
+public Lookup(string Description)
+{
+    foreach(BasketItem item in Items) 
+    {
+        if(item.Description.EqualTo(description)) 
+        {
+            return item;
+        }
+    }
+    return null;
+}
+~~~
+
+
 #### Menu-items toevoegen
 
+We voegen een nieuw menu-item (4) toe, daarnaast wijzigen we de vorige optie 4 naar Q.  
+Als we dan een nieuwe optie willen toevoegen moeten we niet altijd de "Sluit af" optie wijzigen.
 
-#### 
+~~~cs
+string menu = """
+                1> Voeg item toe
+                2> Print items af
+                3> Totaalprijs
+                4> Pas hoeveelheid aan
+                Q> Sluit af
+                """;
+~~~
 
+We maken dan een **loopje** die de **totale prijs** gaat berekenen
+
+~~~cs
+    case ("4"):
+        int totalPrice = 0;
+        foreach (BasketItem item in items)
+        {
+            totalPrice += item.TotalPrice;
+        }
+        Console.WriteLine($"De totale prijs van uw winkelmandje is {totalPrice}");
+        break;
+~~~
+
+Om te vermijden dat we telkens het menu-nummer moeten updaten
+
+~~~cs
+    case ("Q"):
+    case ("q"):
+        Console.WriteLine("Applicatie sluit af");
+        return;
+~~~
 
 ## Code schrijven (deel 4): Overerving en polymorfisme
 

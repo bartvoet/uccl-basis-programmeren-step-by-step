@@ -1167,12 +1167,12 @@ namespace PRB.ShoppingBasket.Bart
 {
     public class NoNegativeAmountAllowed : Exception
     {
-        public NoNegativeAmountAllowed(string element) : base("No negative amount allowed")
-        { 
+        public NoNegativeAmountAllowed(string element) : base($"No negative amount allowed for {element}")
+        {
             Element = element;
         }
 
-        public Element {get;private set;}
+        public string Element { get; private set; }
     }
 }
 ~~~
@@ -1335,12 +1335,13 @@ case ("1"):
     }    
     catch(NoNegativeAmountAllowed e)
     {
-        Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}")
+        Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
     }
 
     break;
+case ("2"):
+    foreach (BasketItem item in basket.Items)
 ~~~
-
 
 #### Property TotalBasketPrice
 
@@ -1351,12 +1352,13 @@ Daarvoor voegen we een read-only property TotalBasketPrice toe:
 int TotalBasketPrice 
 {
     get 
-        {
+    {
         int totalPrice = 0;
-        foreach (BasketItem item in items)
+        foreach (BasketItem item in Items)
         {
             totalPrice += item.TotalPrice;
         }
+        return totalPrice;
     }
 }
 ~~~
@@ -1374,13 +1376,12 @@ het **basket-object**, bijvoorbeeld in de 2de case ga je nu de "basket.Items" mo
 
 #### Commit
 
-Maak hier een **commit** met als comment *"Creating new class to collect the BasketItems"* 
+Maak hier een **commit** met als comment *"Creating new class to collect the BasketItems"*.
 
 ### Increment/Decrement
 
 We gaan nog een nieuwe optie toevoegen aan het menu, namelijk de mogelijkheid om de hoeveelheid
 te verlagen of te verhogen...
-
 
 #### Methodes toevoegen aan Basket
 
@@ -1409,11 +1410,11 @@ public DecrementQuantity()
 Hiervoor ga een opzoeking moeten doen **binnen** de **Basket**-klasse op basis van de naam.
 
 ~~~cs
-public Lookup(string Description)
+public BasketItem Lookup(string description)
 {
     foreach(BasketItem item in Items) 
     {
-        if(item.Description.EqualTo(description)) 
+        if(item.Description.Equals(description)) 
         {
             return item;
         }
@@ -1476,7 +1477,88 @@ Bemerk dat je ook nog exceptie moet opvangen gezien de hoeveel nog altijd onder 
 
 Vergeet daarbij ook niet de laatste optie aan te passen
 
-### Extra: elke case als functie
+#### Voeg hiervoor een commit toe
+
+Voeg een commit to met als comment *"Incrementing and decrementing BasketItems"*
+
+### Niet 2 maal dezelfde item in Basket
+
+Nu we de lookup functie hebben kunnen we ook gaan opzoeken of een item reeds bestaat.
+
+#### Nieuwe exceptie
+
+We gaan dit op een gelijkaardige manier implementeren als we voor negatieve getallen
+hadden voorzien, we starten met een nieuwe exceptie.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class ItemAlreadyInBasket : Exception
+    {
+        public ItemAlreadyInBasket(string description) : base($"No negative amount allowed for {description}")
+        {
+            Description = description;
+        }
+
+        public string Description { get; private set; }
+    }
+}
+~~~
+
+We gebruiken een property Description als extra informatie...
+
+#### Exceptie opwerpen vanuit de Basket-klasse
+
+In de Basket-klasse kunnen we nu nieuwe **Lookup**-functie gebruiken om 
+na te kijken of een item (met de zelfde beschrijving) reeds voorzien is
+in deze Basket.
+
+~~~cs
+public void AddNewItem(BasketItem item)
+{
+    if(ItemProvidedInBasket(item)) 
+    {
+        throw new ItemAlreadyInBasket(item.Description);
+    }
+    Items.Add(item);
+}
+
+public bool ItemProvidedInBasket(BasketItem item) 
+{
+    return Lookup(item.Description) != null;
+}
+~~~
+
+We hebben hiervoor ook nog een extra helper-functie voorzien die ItemProvidedInBasket
+een deze verificatie opneemt.
+
+Als deze  true geeft zullen we een exceptie opwerpen.
+
+#### Exceptie opvangen
+
+Het enige resterende is nu nog een extra catch-clausule toe te voegen
+aan de huidige try-block
+
+~~~cs
+try
+{
+    basket.AddNewItem(new BasketItem(price, description, quantity));
+}
+catch (NoNegativeAmountAllowed e)
+{
+    Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
+}
+catch (ItemAlreadyInBasket e)
+{
+    Console.WriteLine($"Het item met beschrijving {e.Description} bestaat reeds");
+}
+~~~
+
+#### Voeg hiervoor een commit toe
+
+Voeg een commit to met als comment *"Not allowing twice item with same description"*
+
+### Extra opdracht: elke case als functie
 
 Gezien momenteel er al veel code gaat staan in de case probeer hier de inhoud van elke case
 te extracten naar een functie binnen Program.

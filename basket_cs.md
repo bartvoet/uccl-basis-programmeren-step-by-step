@@ -1390,14 +1390,14 @@ We gaan dit doen adhv 2 nieuwe **methodes** in de **BasketItem**-klasse, namelij
 of beneden brengen.
 
 ~~~cs
-public IncrementQuantity()
+public int IncrementQuantity()
 {
-    Quantity++;
+    return ++Quantity;
 }
 
-public DecrementQuantity()
+public int DecrementQuantity()
 {
-    Quantity--;
+    return --Quantity;
 }
 ~~~
 
@@ -1580,7 +1580,217 @@ Test je oplossing en voorzie een commit-boodschap in trend van
 
 ## Code schrijven (deel 4): Overerving en polymorfisme
 
+In dit deel gaan we proberen gebruik te maken van **overerving** om verschillende
+soorten basketitems te hebben.
+
+Om dit te ondersteunen gaan we onze code wat aanpassen.  
+
 ### Verschillende soorten van items
+
+De huidige **structuur** van **BasketItem** ziet er als volgt uit:
+
+![](after_part_2.png)
+
+We gaan nu verschillende soorten **BasketItem**-klassen **maken**:
+
+* **QuantityBasketItem** waar je de prijs berekent per item (zoals dat nu wordt gedaan)
+* **BulkBasketItem** waar je de prijs zal berekenen per gewicht
+
+Beide gaan overerven van BasketItem die nog altijd het gedeelde property Description zal bevatten 
+
+![](after_part_3.png)
+
+
+### Stap 1: QuantityBasketItem maken
+
+In de 1ste stap gaan we **QuantityBasketItem** aanmaken.  
+Gezien onze oude BasketItem eigenlijk al deze implementatie bevat, kan je gewoon deze implementatie overnemen.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class QuantityBasketItem : BasketItem
+    {
+        int _price;
+        int _quantity;
+        public QuantityBasketItem(int price, string description, int quantity):base(description)
+        {
+            Price = price;
+            Description = description;
+            Quantity = quantity;
+        }
+
+        public int Price
+        {
+            get
+            {
+                return _price;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowed("prijs");
+                }
+                _price = value;
+            }
+        }
+
+        public override int IncrementQuantity()
+        {
+            return ++Quantity;
+        }
+
+        public override int DecrementQuantity()
+        {
+            return --Quantity;
+        }
+
+        public override int Quantity
+        {
+            get
+            {
+                return _quantity;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowed("hoeveelheid");
+                }
+                _quantity = value;
+            }
+        }
+
+        public override int TotalPrice
+        {
+            get { return Price * Quantity; }
+        }
+
+        public string Description { get; private set; }
+    }
+}
+~~~
+
+We zorgen wel dat deze overerft van BasketItem.  
+
+BasketItem zelf zal de gedeelde basisklasse zijn van QuantityBasketItem en BulkBasketItem.
+
+BasketItem zal momenteel enkel verantwoordelijk voor de description bij te houden, de 2 functies (IncrementQuantity en DecrementQuantity) tesamen met de property TotalPrice laten we gewoon een default-waarde teruggeven. 
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class BasketItem
+    {
+        public BasketItem(string description)
+        {
+            Description = description;
+        }
+
+        public virtual int IncrementQuantity()
+        {
+            return 0;
+        }
+
+        public virtual int DecrementQuantity()
+        {
+            return 0;
+        }
+
+        public virtual int Quantity 
+        {
+            get { return 0; } 
+        }
+
+        public virtual int TotalPrice 
+        {
+            get { return 0; } 
+        }
+
+        public string Description { get; private set; }
+    }
+}
+~~~
+
+#### Aanpassingen in Program
+
+Nu volstaat het binnen de de 1ste case van in het volgende stuk code (1ste case)
+
+~~~cs
+basket.AddNewItem(new BasketItem(price, description, quantity));
+~~~
+
+te wijzigen naar 
+
+~~~cs
+basket.AddNewItem(new QuantityBasketItem(price, description, quantity));
+~~~
+
+De rest van de code zal nog steeds met BasketItem werken
+
+#### Testen en committen
+
+Test nu je programma, dit zou nog altijd het zelfde moeten werken (zonder regressie)
+
+### Stap2: BulkBasketItem gebruiken
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class BulkBasketItem : BasketItem
+    {
+        int _pricePerKilo;
+        int _weight;
+        public BulkBasketItem(int pricePerKilo, string description, int weight):base(description)
+        {
+            Weight = weight;
+            Description = description;
+            PricePerKilo = pricePerKilo;
+        }
+
+        public int PricePerKilo
+        {
+            get
+            {
+                return _pricePerKilo;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowed("prijs per item");
+                }
+                _pricePerKilo = value;
+            }
+        }
+
+        public int Weight
+        {
+            get
+            {
+                return _weight;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowed("gewicht");
+                }
+                _weight = value;
+            }
+        }
+
+        //Divide by 1000 as
+        public int TotalPrice
+        {
+            get { return (PricePerKilo * Weight) / 1000; }
+        }
+
+        public string Description { get; private set; }
+    }
+}
+~~~
 
 ### ToString() gebruiken
 

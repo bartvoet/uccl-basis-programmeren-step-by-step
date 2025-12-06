@@ -1349,7 +1349,7 @@ Het bereken van de totaalprijs kan nu ook worden geplaatst binnen de **Basket**-
 Daarvoor voegen we een read-only property TotalBasketPrice toe:
 
 ~~~cs
-int TotalBasketPrice 
+public int TotalBasketPrice 
 {
     get 
     {

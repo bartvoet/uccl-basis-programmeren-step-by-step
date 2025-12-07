@@ -51,7 +51,7 @@ Het komt er op neer van (met behulp van een tool) de evolutie en verschillende v
 
 De tool die we hiervoor gebruiken is **Git**, en quasi **standaard** op **gebied** van **code-beheer**.  
 
-## Opzetten van het project
+## Opzetten van het project (deel 0)
 
 In dit voorbeeld gaan we Git gebruiken om de **wijzigingen** van onze **applicatie** bij te houden.  
 
@@ -963,9 +963,10 @@ We starten eerst met **hergebruik** via **functies** om **repetitie** in de **co
 
 #### Extractie naar aparte functie
 
-Een 1ste (vanzelfsprekende) is het vragen naar **input** van een **gebruiker** (binnen een console) adhv **functies**
-per "datatype".  
-Een **1ste** **voorbeeld** is het **uitlezen** van een **string** waar we de **vraag** als **functieargument** meegeven:
+Een **1ste** (vanzelfsprekende) **optimalisatie** is het vragen naar **input** van een **gebruiker** (binnen een console) adhv **functies**
+per "datatype". 
+
+We starten bij het **uitlezen** van een **string** en geven de **vraag** als **functieargument** mee:
 
 ~~~cs
 public static string ReadString(string message)
@@ -975,7 +976,7 @@ public static string ReadString(string message)
 }
 ~~~
 
-Gelijkaardig daaraan kan je ook een **integer** **opvragen**:
+**Gelijkaardig** daaraan kan je ook een **integer** **opvragen**:
 
 ~~~cs
 public static int ReadInt(string message)
@@ -1036,14 +1037,14 @@ Meer specifiek krijgen we een **ThrowFormatException**.
 
 #### Oplossing: testen en blijven vragen tot getal is ingegeven
 
-Om dit te **vermijden** kan je voor dit type exception een **try-catch** om deze op te vangen zoals hieronder geïllustreerd.  
+Om dit te **vermijden** een **try-catch** gebruiken om deze op het specifiek type exception op te vangen zoals hieronder geïllustreerd:
 
 ~~~cs
 try 
 {
     string result = int.Parse(ReadString(message));
 } 
-catch(ThrowFormatException e)
+catch(FormatException e)
 {
     Console.WriteLine("Foutieve ingave, dit is geen nummer");
 }
@@ -1070,22 +1071,9 @@ public static int ReadInt(string message)
 }
 ~~~
 
-~~~
-1> Voeg item toe
-2> Print items af
-3> Sluit af
-1
-Geef prijs:
-abc
-Foutieve ingave, dit is geen nummer
-Geef prijs:
-10
-Geef omschrijving:
-~~~
+#### Program aanpassen testen
 
-#### Testen
-
-Je kan nu (in Program) de code aanpassen in de **1ste case** als volgt:
+Je kan nu in de **Program-klasse** de code aanpassen in de **1ste case** als volgt:
 
 ~~~cs
 int price = ReadInt("Geef prijs");
@@ -1093,7 +1081,7 @@ string description = ReadString("Geef omschrijving");
 int quantity = ReadInt("Geef hoeveelheid");
 ~~~
 
-Als je daar bijvoorbeeld geen getal geeft voor prijs, zie je dat de applicatie dit opnieuw opvraagt:
+Als je daar **bijvoorbeeld geen getal** geeft voor prijs, zie je dat de applicatie dit **opnieuw opvraagt**:
 
 ~~~
 1> Voeg item toe
@@ -1120,7 +1108,7 @@ Hieronder zie je het gebruik van int.Parse binnen de ReadInt-functie
 public static int ReadInt(string message)
 {
     int result;
-    while (!int.TryParse(ReadString(message), out result));
+    while (!int.TryParse(ReadString(message), out result))
     {
         Console.WriteLine("Foutieve ingave, dit is geen nummer");
     }
@@ -1144,17 +1132,16 @@ Nu hebben we **2 vliegen in 1 klap** gevangen:
 * We **vermijden** dat het programma zal **crashen** (door excepties)
 * Onze code in de **Program**-klasse wordt nu wat **gereduceerd** en is ook **duidelijker** doordat de functies een duidelijk naam hebben
 
-
 #### Commit maken
 
-En maak vervolgens een **commit** met de boodschap *"Extracting read-logic to separate functions"*
+We maken vervolgens een **commit** met de boodschap *"Extracting read-logic to separate functions"*
 
 ### Defensief programmeren: geen negatieve bedragen
 
 De volgende stap - in het defensief programmeren - is er voor te zorgen dat in onze **logica**
 **geen negatieve bedragen** terecht kunnen komen.
 
-Deze **controle** gaan we **inlassen** in onze **BasketItem**-klasse door een **exceptie** op te werpen wanneer deze wordt geïnitialiseerd of gewijzigd met een negatieve waarde (prijs of hoeveelheid)
+Deze **controle** gaan we **inlassen** in onze **BasketItem**-klasse door een **exceptie** op te werpen wanneer deze wordt geïnitialiseerd of **gewijzigd** met een **negatieve waarde** (prijs of hoeveelheid)
 
 #### Excepties maken
 
@@ -1237,8 +1224,8 @@ public class BasketItem
 }
 ~~~
 
-!! Doe nu ook **hetzelfde** voor de **Quantity-property** maar let op dat je daar de string "prijs"
-door "hoeveelheid" verandert !!
+!! Doe nu ook **hetzelfde** voor de **Quantity-property** maar let op dat je daar voor de **Element-string** "prijs"
+door **"hoeveelheid"** verandert !!
 
 > Zie ook https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/properties voor wat meer verdieping
 
@@ -1247,7 +1234,6 @@ door "hoeveelheid" verandert !!
 Eénmaal deze **controles** **toegevoegd** kan je dit nu **opvangen** binnen de **Program**-code zoals hieronder:
 
 ~~~cs
-
 case ("1"):
     int price = ReadInt("Geef prijs: ");
     string description = ReadString("Geef omschrijving: ");
@@ -1260,7 +1246,6 @@ case ("1"):
     {
         Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}")
     }
-
     break;
 ~~~
 
@@ -1279,7 +1264,7 @@ In de echte wereld heb je meestal **meerdere** **klasses** waarvan deze **object
 
 ### Modularisatie door Compositie: Basket-klasse maken
 
-In dit geval gaan we een 2de klasse **Basket** toevoegen, deze klasse gaat de lijst van
+In dit geval gaan we een **2de** klasse **Basket** toevoegen, deze klasse gaat de lijst van
 **BasketItem**-objecten wrappen.
 
 Het 1ste stuk logica dat we kunnen toevoegen aan deze klasse is het **toevoegen** van een 
@@ -1322,7 +1307,7 @@ static void Main(string[] args)
 ~~~
 
 **Vervang** daarvoor in de verschillende cases de items-lijst door het basket-object.  
-Binnen de 1ste case gaat dit als volgt...
+Binnen de **1ste case** gaat dit als volgt...
 
 ~~~cs
 case ("1"):
@@ -1343,10 +1328,13 @@ case ("2"):
     foreach (BasketItem item in basket.Items)
 ~~~
 
+In de **2de case** moet je de property van Items van basket gebruiken voor het afdrukkken van de verschillende items.  
+Voor de 3de case gaan we een property toevoegen...
+
 #### Property TotalBasketPrice
 
-Het bereken van de totaalprijs kan nu ook worden geplaatst binnen de **Basket**-klasse.  
-Daarvoor voegen we een read-only property TotalBasketPrice toe:
+Het **berekenen** van de **totaalprijs** kan nu ook worden geplaatst binnen de **Basket**-klasse.  
+Daarvoor voegen we een **read-only** property **TotalBasketPrice** toe en migreren we de bestaande code:
 
 ~~~cs
 public int TotalBasketPrice 
@@ -1363,7 +1351,7 @@ public int TotalBasketPrice
 }
 ~~~
 
-En passen we onze 3de case aan zoals hieronder:
+Hiervoor passen onze **3de case** aan zoals hieronder (waardoor de loop in de case verdwijnt):
 
 ~~~cs
     case ("3"):
@@ -1371,22 +1359,19 @@ En passen we onze 3de case aan zoals hieronder:
         break;
 ~~~
 
-... werk dit nu ook verder uit voor de andere cases waar de **property Items** gebruikt van
-het **basket-object**, bijvoorbeeld in de 2de case ga je nu de "basket.Items" moeten gebruiken...
-
 #### Commit
 
 Maak hier een **commit** met als comment *"Creating new class to collect the BasketItems"*.
 
 ### Increment/Decrement
 
-We gaan nog een nieuwe optie toevoegen aan het menu, namelijk de mogelijkheid om de hoeveelheid
-te verlagen of te verhogen...
+We gaan nog een **nieuwe optie** toevoegen aan het menu, namelijk de mogelijkheid om de **hoeveelheid**
+te **verlagen** of te **verhogen**...
 
 #### Methodes toevoegen aan Basket
 
 We gaan dit doen adhv 2 nieuwe **methodes** in de **BasketItem**-klasse, namelijk
-**IncrementQuantity** en **DecrementQuantity** die de hoeveel met 1-tje naar boven
+**IncrementQuantity** en **DecrementQuantity** waarvan we de hoeveelheid met 1-tje naar boven
 of beneden brengen.
 
 ~~~cs
@@ -1794,7 +1779,7 @@ namespace PRB.ShoppingBasket.Bart
 
 ### ToString() gebruiken
 
-## Code schrijven (deel 4): Abstracties en interfaces
+## Code schrijven (deel 5): Abstracties en interfaces
 
 ### BasketItem abstract maken
 

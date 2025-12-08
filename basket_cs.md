@@ -1444,9 +1444,9 @@ Bemerk dat je ook nog exceptie moet opvangen gezien de hoeveel nog altijd onder 
         {
             switch(choice)
             {
-                case("+"): item.Increment();
-                case("-"): item.Decrement();
-                default: Console.WriteLine($"{choice} is een ongeldige keuze");
+                case("+"): item.Increment();break;
+                case("-"): item.Decrement();break;
+                default: Console.WriteLine($"{choice} is een ongeldige keuze");break;
             }
         }
         catch(NoNegativeAmountAllowed e)

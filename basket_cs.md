@@ -1355,7 +1355,7 @@ Hiervoor passen onze **3de case** aan zoals hieronder (waardoor de loop in de ca
 
 ~~~cs
     case ("3"):
-        Console.WriteLine($"De totale prijs van uw winkelmandje is {basket.TotalPrice}");
+        Console.WriteLine($"De totale prijs van uw winkelmandje is {basket.TotalBasketPrice}");
         break;
 ~~~
 

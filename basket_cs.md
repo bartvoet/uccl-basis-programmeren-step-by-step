@@ -65,7 +65,7 @@ We starten met:
 
 #### Stap 1: Aanmaak project
 
-We starten met een nieuw project aan:
+We starten met een **nieuw project** aan:
 
 ![](new_console_project_1.png)
 
@@ -73,35 +73,34 @@ We noemen we dit **PRB.ShoppingBasket.Bart** waar je **Bart** **vervangt** door 
 
 ![](new_console_project_2.png)
 
-Tenslotte maak je het project aan met de optie "Do not use top-level statements"
+Tenslotte maak je het project aan met de optie **"Do not use top-level statements"**
 
 ![](new_console_project_3.png)
 
-Als resultaat zou je een project moeten krijgen zoals hieronder...
+Als **resultaat** zou je een **project** moeten krijgen zoals hieronder...
 
 ![](new_console_project_4.png)
 
 #### Stap 2: Git toevoegen aan dit project
 
-We selecteren in het menu Git/Create Repository
+We **selecteren** in het menu **"Git/Create Repository"**
 
 ![](git_new_repo_1.png)
 
-Binnen dat menu kiezen we:
+Binnen dat **venster** kiezen we:
 
-* Local Only (linkerkant)
-* Optioneel mag je ook nog "Add README.md" toevoegen (komen we later nog op terug)
+* **Local Only** (linkerkant)
+* **Optioneel** mag je ook nog **"Add README.md"** toevoegen (komen we later nog op terug)
 
 ![](git_new_repo_2.png)
 
 #### Resultaat
 
-Wat is er nu gebeurd?  
-Op in het menu "Git/Open in File Explorer", dit opent een file explorer met je project.  
+Om te weten wat er nu gebeurd is, **selecteer** in het menu **"Git/Open in File Explorer"**, dit opent een **file explorer** met je project.  
 
 > Zie wel dat je in je file explorer aanduidt dat je "hidden files" kan zien
 
-Binnen deze folder zie je dat er aantal nieuwe hidden files zijn:
+Binnen deze folder zie je dat er aantal nieuwe **hidden files** zijn:
 
 * Een **.git-folder** deze bevat de database-objecten die je code-wijzigingen bijhoudt
 * Een **.gitignore** die aanduidt welke files (extensies) er moeten genegeerd worden door git
@@ -109,7 +108,7 @@ Binnen deze folder zie je dat er aantal nieuwe hidden files zijn:
 
 ![](git_new_repo_3.png)
 
-Die .git-folder noemen we ook een **lokale** **git-repository**, dit is 
+Die **.git**-folder noemen we ook een **lokale** **git-repository**, dit is 
 
 * Een soort van database waar je **code-wijzigingen** kan **bijhouden/traceren**
 * Als een soort van **snapshot** (zoals je bijvoorbeeld een snapshot van een harde schijf zou nemen)
@@ -368,6 +367,17 @@ namespace PRB.ShoppingBasket.Bart
 }
 ~~~
 
+#### Testen
+
+**Test** deze code even door deze gewoon uit te voeren, je zou een printout moeten hebben zoals hieronder:
+
+~~~
+Item Patatten met prijs 10
+
+C:\Users\bart\myprojects\PRB.ShoppingBasket.Bart\PRB.ShoppingBasket.Bart\bin\Debug\net8.0\PRB.ShoppingBasket.Bart.exe (process 9348) exited with code 0.
+Press any key to close this window . . .
+~~~
+
 Vanzelfsprekend doet deze nog **niet** erg **veel**, maar het is een 1ste stap...  
 Eerst gaan we echter onze eerste **code-wijzigen registereren/revisioneren** in git.
 
@@ -376,7 +386,7 @@ Eerst gaan we echter onze eerste **code-wijzigen registereren/revisioneren** in 
 We hebben ons **eerste stuk code** geschreven.  
 De volgende stap is dat we deze files gaan toevoegen aan een **nieuwe commit**.
 
-Als je nu in het menu "Git/Commit" selecteert zie je de wijzigingen die klaarstaan
+Als je nu in het **menu "Git/Commit"** selecteert zie je de wijzigingen die klaarstaan
 
 ![](first_commit_1.png)
 
@@ -514,8 +524,6 @@ We printen hier het menu telkens af en vangen gebruikers-input op via de functie
 > Voor het menu gebruiken we een **multiline string** die start en eindigt met 3 dubbele quotes
 
 ~~~cs
-using PRB.ShoppingBasket.Bart.Model;
-
 namespace PRB.ShoppingBasket.Bart
 {
     internal class Program
@@ -610,13 +618,13 @@ Het eerste event dat we al kunnen afwerken is **"3> Sluit af"** opdat we het pro
 Hiervoor stoppen we het programma door uit de **main-functie** een **return** uit te voeren, dat zal er voor zorgen dat het programma wordt afgesloten.
 
 ~~~cs
-    switch(menuChoice)
-    {
-        case("1"): Console.WriteLine("TODO: voeg item toe");break;
-        case("2"): Console.WriteLine("TODO: print item toe");break;
-        case("3"): Console.WriteLine("Applicatie sluit af");return;
-        default: Console.WriteLine("Foutieve keuze");break;
-    }
+switch(menuChoice)
+{
+    case("1"): Console.WriteLine("TODO: voeg item toe");break;
+    case("2"): Console.WriteLine("TODO: print item toe");break;
+    case("3"): Console.WriteLine("Applicatie sluit af");return;
+    default: Console.WriteLine("Foutieve keuze");break;
+}
 ~~~
 
 > Bemerk ook dat je hier de break door een return vervangt (gezien bij return de break niet veel zin meer heeft)
@@ -1235,16 +1243,16 @@ Eénmaal deze **controles** **toegevoegd** kan je dit nu **opvangen** binnen de 
 
 ~~~cs
 case ("1"):
-    int price = ReadInt("Geef prijs: ");
-    string description = ReadString("Geef omschrijving: ");
-    int quantity = ReadInt("Geef hoeveelheid: ");
+    int price = ReadInt("Geef prijs");
+    string description = ReadString("Geef omschrijving");
+    int quantity = ReadInt("Geef hoeveelheid");
     try
     {
         items.Add(new BasketItem(price, description, quantity));
     }    
     catch(NoNegativeAmountAllowed e)
     {
-        Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}")
+        Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
     }
     break;
 ~~~
@@ -1311,9 +1319,9 @@ Binnen de **1ste case** gaat dit als volgt...
 
 ~~~cs
 case ("1"):
-    int price = ReadInt("Geef prijs: ");
-    string description = ReadString("Geef omschrijving: ");
-    int quantity = ReadInt("Geef hoeveelheid: ");
+    int price = ReadInt("Geef prijs");
+    string description = ReadString("Geef omschrijving");
+    int quantity = ReadInt("Geef hoeveelheid");
     try
     {
         basket.AddNewItem(new BasketItem(price, description, quantity));
@@ -1432,35 +1440,33 @@ Bemerk dat je ook nog exceptie moet opvangen gezien de hoeveel nog altijd onder 
 
 ~~~cs
     case ("4"):
-        string description = ReadString("Welk item (beschrijving)");
-        BasketItem item = basket.Lookup(description);
-        if (item == null)
+        string itemDescription = ReadString("Welk item (beschrijving)");
+        BasketItem selectedItem = basket.Lookup(itemDescription);
+        if (selectedItem == null)
         {
-            Console.WriteLine($"Item met beschrijving '{description}' bestaat niet")  
+            Console.WriteLine($"Item met beschrijving '{itemDescription}' bestaat niet");
         }
 
         string choice = ReadString("Kies lager (-) of hoger (+)");
         try
         {
-            switch(choice)
+            switch (choice)
             {
-                case("+"): item.IncrementQuantity();break;
-                case("-"): item.DecrementQuantity();break;
-                default: Console.WriteLine($"{choice} is een ongeldige keuze");break;
+                case ("+"): selectedItem.IncrementQuantity(); break;
+                case ("-"): selectedItem.DecrementQuantity(); break;
+                default: Console.WriteLine($"{choice} is een ongeldige keuze"); break;
             }
         }
-        catch(NoNegativeAmountAllowed e)
+        catch (NoNegativeAmountAllowed e)
         {
-            Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}")
+            Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
         }
         break;
-    case("Q"):
-    case("q"):
+    case ("Q"):
+    case ("q"):
         Console.WriteLine("Applicatie sluit af");
         return;
 ~~~
-
-Vergeet daarbij ook niet de laatste optie aan te passen
 
 #### Voeg hiervoor een commit toe
 

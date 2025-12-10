@@ -1554,7 +1554,7 @@ Voeg een commit to met als comment *"Not allowing twice item with same descripti
 Gezien momenteel er al veel code gaat staan in de case probeer hier de inhoud van elke case
 te extracten naar een functie binnen Program.
 
-Bijvoorbeeld de laatste toevoeging zou je kunnen isoleren in een functie DecrementOfIncrement
+**Bijvoorbeeld** de **laatste** **toevoeging** zou je kunnen isoleren in een functie **DecrementOfIncrement**
 
 ~~~cs
 case ("4"):
@@ -1562,7 +1562,30 @@ case ("4"):
     break
 ~~~
 
-Doe dit voor elke case (buiten de exit waar dit niet nodig is)
+Doe dit voor **elke case** (buiten de exit waar dit niet nodig is) zoasl
+in het voorbeeld hieronder:
+
+~~~cs
+switch (menuChoice)
+{
+    case ("1"):
+        AksForNewItem(basket);
+        break;
+    case ("2"):
+        PrintAllItems(basket);
+        break;
+    case ("3"):
+        PrintTotalBasketPrice(basket);
+        break;
+    case ("4"):
+        DecrementOrIncrement(basket);
+        return;
+    case ("Q"):
+    case ("q"):
+        Console.WriteLine("Applicatie sluit af");
+        return;
+}
+~~~
 
 #### Testen en committen
 

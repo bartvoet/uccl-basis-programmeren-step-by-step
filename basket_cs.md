@@ -352,8 +352,6 @@ zelf zit (en dat je die niet zo maar kan wijzigen)
 Om zeker te zijn van correctheid passen we Program.cs aan om zeker te zijn dat deze geen code-fouten bevat, maw we **testen** bij elke **stap**.
 
 ~~~cs
-using PRB.ShoppingBasket.Bart.Model;
-
 namespace PRB.ShoppingBasket.Bart
 {
     internal class Program
@@ -456,7 +454,7 @@ We hebben nu echter **nog geen applicatie** daarvoor zijn er nog **2** belangrij
 De **eerste stap** is een **lijst** aan te maken als globale variable waarin we BasketItems kunnen toevoegen en bewerken.
 
 ~~~cs
-using PRB.ShoppingBasket.Bart.Model;
+using PRB.ShoppingBasket.Bart;
 
 namespace PRB.ShoppingBasket.Bart
 {
@@ -488,7 +486,7 @@ Zo'n loop is wat we noemen een **event-loop**, telkens als de gebruiker een inga
 Een eerste versie van de loop...
 
 ~~~cs
-using PRB.ShoppingBasket.Bart.Model;
+using PRB.ShoppingBasket.Bart;
 
 namespace PRB.ShoppingBasket.Bart
 {
@@ -990,7 +988,7 @@ public static string ReadString(string message)
 public static int ReadInt(string message)
 {
     Console.Write($"{message}: ");
-    int result = int.ParseInt(Console.ReadLine());
+    int result = int.Parse(Console.ReadLine());
     return result;
 }
 ~~~
@@ -1160,9 +1158,9 @@ We maken hiervoor een **specifieke exceptie** aan die we gaan **opwerpen** vanui
 ~~~cs
 namespace PRB.ShoppingBasket.Bart
 {
-    public class NoNegativeAmountAllowed : Exception
+    public class NoNegativeAmountAllowedException : Exception
     {
-        public NoNegativeAmountAllowed(string element) : base($"No negative amount allowed for {element}")
+        public NoNegativeAmountAllowedException(string element) : base($"No negative amount allowed for {element}")
         {
             Element = element;
         }
@@ -1223,7 +1221,7 @@ public class BasketItem
         {
             if (value < 0)
             {
-                throw new NoNegativeAmountAllowed("prijs");
+                throw new NoNegativeAmountAllowedException("prijs");
             }
             _price = value;
         }
@@ -1250,7 +1248,7 @@ case ("1"):
     {
         items.Add(new BasketItem(price, description, quantity));
     }    
-    catch(NoNegativeAmountAllowed e)
+    catch(NoNegativeAmountAllowedException e)
     {
         Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
     }
@@ -1326,7 +1324,7 @@ case ("1"):
     {
         basket.AddNewItem(new BasketItem(price, description, quantity));
     }    
-    catch(NoNegativeAmountAllowed e)
+    catch(NoNegativeAmountAllowedException e)
     {
         Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
     }
@@ -1446,20 +1444,22 @@ Bemerk dat je ook nog exceptie moet opvangen gezien de hoeveel nog altijd onder 
         {
             Console.WriteLine($"Item met beschrijving '{itemDescription}' bestaat niet");
         }
-
-        string choice = ReadString("Kies lager (-) of hoger (+)");
-        try
+        else
         {
-            switch (choice)
+            string choice = ReadString("Kies lager (-) of hoger (+)");
+            try
             {
-                case ("+"): selectedItem.IncrementQuantity(); break;
-                case ("-"): selectedItem.DecrementQuantity(); break;
-                default: Console.WriteLine($"{choice} is een ongeldige keuze"); break;
+                switch (choice)
+                {
+                    case ("+"): selectedItem.IncrementQuantity(); break;
+                    case ("-"): selectedItem.DecrementQuantity(); break;
+                    default: Console.WriteLine($"{choice} is een ongeldige keuze"); break;
+                }
             }
-        }
-        catch (NoNegativeAmountAllowed e)
-        {
-            Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
+            catch (NoNegativeAmountAllowedException e)
+            {
+                Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
+            }
         }
         break;
     case ("Q"):
@@ -1478,15 +1478,14 @@ Nu we de lookup functie hebben kunnen we ook gaan opzoeken of een item reeds bes
 
 #### Nieuwe exceptie
 
-We gaan dit op een gelijkaardige manier implementeren als we voor negatieve getallen
-hadden voorzien, we starten met een nieuwe exceptie.
+We gaan dit op een gelijkaardige manier implementeren als we voor negatieve getallen hadden voorzien, we starten met een nieuwe exceptie.
 
 ~~~cs
 namespace PRB.ShoppingBasket.Bart
 {
-    public class ItemAlreadyInBasket : Exception
+    public class ItemAlreadyInBasketException : Exception
     {
-        public ItemAlreadyInBasket(string description) : base($"No negative amount allowed for {description}")
+        public ItemAlreadyInBasketException(string description) : base($"No negative amount allowed for {description}")
         {
             Description = description;
         }
@@ -1509,7 +1508,7 @@ public void AddNewItem(BasketItem item)
 {
     if(ItemProvidedInBasket(item)) 
     {
-        throw new ItemAlreadyInBasket(item.Description);
+        throw new ItemAlreadyInBasketException(item.Description);
     }
     Items.Add(item);
 }
@@ -1535,11 +1534,11 @@ try
 {
     basket.AddNewItem(new BasketItem(price, description, quantity));
 }
-catch (NoNegativeAmountAllowed e)
+catch (NoNegativeAmountAllowedException e)
 {
     Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
 }
-catch (ItemAlreadyInBasket e)
+catch (ItemAlreadyInBasketException e)
 {
     Console.WriteLine($"Het item met beschrijving {e.Description} bestaat reeds");
 }
@@ -1579,7 +1578,7 @@ switch (menuChoice)
         break;
     case ("4"):
         DecrementOrIncrement(basket);
-        return;
+        break;
     case ("Q"):
     case ("q"):
         Console.WriteLine("Applicatie sluit af");
@@ -1590,12 +1589,14 @@ switch (menuChoice)
 #### Testen en committen
 
 Test je oplossing en voorzie een commit-boodschap in trend van 
-*'Verminderen en verhogen van hoeveelheid'*
+*'Extracting event-functions'*
 
 ## Code schrijven (deel 4): Overerving en polymorfisme
 
-In dit deel gaan we proberen gebruik te maken van **overerving** om verschillende
-soorten basketitems te hebben.
+Tot nog toe hebben we **1 soort BasketItem** waarin we een prijs en hoeveelheid invullen.  
+In het volgende deel gaan we **meerdere soorten BasketItem's** te voorzien
+
+Dit gaan we proberen te verkrijgen door gebruik te maken van **overerving** (om deze verschillende soorten basketitems te kunnen gebruiken).
 
 Om dit te ondersteunen gaan we onze code wat aanpassen.  
 
@@ -1610,87 +1611,53 @@ We gaan nu verschillende soorten **BasketItem**-klassen **maken**:
 * **QuantityBasketItem** waar je de prijs berekent per item (zoals dat nu wordt gedaan)
 * **BulkBasketItem** waar je de prijs zal berekenen per gewicht
 
-Beide gaan overerven van BasketItem die nog altijd het gedeelde property Description zal bevatten 
+Beide klassen gaan **overerven** van **BasketItem** die nog altijd de gedeelde property **Description** zal bevatten.
 
 ![](after_part_3.png)
 
+### Stap 1: BasketItem -> QuantityBasketItem
 
-### Stap 1: QuantityBasketItem maken
-
-In de 1ste stap gaan we **QuantityBasketItem** aanmaken.  
-Gezien onze oude BasketItem eigenlijk al deze implementatie bevat, kan je gewoon deze implementatie overnemen.
+Gezien onze reeds bestaande BasketItem eigenlijk al deze implementatie bevat, gaan we - als 1ste stap -  starten met deze gewoon te **hernoemen** naar **QuantityBasketItem**.
 
 ~~~cs
-namespace PRB.ShoppingBasket.Bart
-{
-    public class QuantityBasketItem : BasketItem
+    public class QuantityBasketItem 
     {
-        int _price;
-        int _quantity;
-        public QuantityBasketItem(int price, string description, int quantity):base(description)
-        {
-            Price = price;
-            Description = description;
-            Quantity = quantity;
-        }
-
-        public int Price
-        {
-            get
-            {
-                return _price;
-            }
-            private set
-            {
-                if (value < 0)
-                {
-                    throw new NoNegativeAmountAllowed("prijs");
-                }
-                _price = value;
-            }
-        }
-
-        public override int IncrementQuantity()
-        {
-            return ++Quantity;
-        }
-
-        public override int DecrementQuantity()
-        {
-            return --Quantity;
-        }
-
-        public override int Quantity
-        {
-            get
-            {
-                return _quantity;
-            }
-            private set
-            {
-                if (value < 0)
-                {
-                    throw new NoNegativeAmountAllowed("hoeveelheid");
-                }
-                _quantity = value;
-            }
-        }
-
-        public override int TotalPrice
-        {
-            get { return Price * Quantity; }
-        }
-
-        public string Description { get; private set; }
+        //...
     }
-}
 ~~~
 
-We zorgen wel dat deze overerft van BasketItem.  
 
-BasketItem zelf zal de gedeelde basisklasse zijn van QuantityBasketItem en BulkBasketItem.
+Als je hier de **renaming** feature gebruikt van **Visual Studio** of **Rider** gaat overal het type worden aangepast in de andere klassen van de applicatie (Basket.cs en Program.cs).  
 
-BasketItem zal momenteel enkel verantwoordelijk voor de description bij te houden, de 2 functies (IncrementQuantity en DecrementQuantity) tesamen met de property TotalPrice laten we gewoon een default-waarde teruggeven. 
+De volgende code in Program.cs...
+
+~~~cs
+basket.AddNewItem(new BasketItem(price, description, quantity));
+~~~
+
+zou ook moeten **gewijzigd** worden **naar** 
+
+~~~cs
+basket.AddNewItem(new QuantityBasketItem(price, description, quantity));
+~~~
+
+#### Commit maken: "Rename BasketItem to QuantityBasketItem"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor "Rename BasketItem to QuantityBasketItem"
+
+### Stap 2: BasketItem (opnieuw) maken
+
+De **naam BasketItem** gaan we nu gebruiken voor onze **nieuwe basisklasse**.  
+
+Dus als volgende stap maken we **BasketItem** opnieuw aan, maar deze zal sterk
+veréénvoudigd worden tov de vroegere versie...
+
+> Deze (nieuwe) BasketItem gaat later de gedeelde basisklasse zijn van QuantityBasketItem en BulkBasketItem (zie volgende stappen).
+
+#### Nieuwe BasketItem
+
+Hieronder zie je de nieuwe klasse BasketItem:
 
 ~~~cs
 namespace PRB.ShoppingBasket.Bart
@@ -1702,6 +1669,13 @@ namespace PRB.ShoppingBasket.Bart
             Description = description;
         }
 
+        public string Description { get; private set; }
+        
+        public virtual int TotalPrice 
+        {      
+            get { return 0; }
+        }
+        
         public virtual int IncrementQuantity()
         {
             return 0;
@@ -1711,56 +1685,224 @@ namespace PRB.ShoppingBasket.Bart
         {
             return 0;
         }
-
-        public virtual int Quantity 
-        {
-            get { return 0; } 
-        }
-
-        public virtual int TotalPrice 
-        {
-            get { return 0; } 
-        }
-
-        public string Description { get; private set; }
     }
 }
 ~~~
 
-#### Aanpassingen in Program
+Deze BasketItem-klasse zal momenteel **enkel verantwoordelijk** voor de **description** bij te houden.  
+Andere functies (IncrementQuantity en DecrementQuantity) en de property TotalPrice laten we gewoon een default-waarde teruggeven.  
+De werkelijke implementatie zal voorzien worden binnen de **overervende klassen**.
 
-Nu volstaat het binnen de de 1ste case van in het volgende stuk code (1ste case)
+#### QuantityBasketItem erft nu over van BasketItem
+
+Vervolgens zorgen we ervoor dat QuantityBasketItem overerft van BasketItem.  
+Hiervoor moet je allereerst:
+
+* Zorgen voor de **overerving** op klasse-niveau
+* De **constructor** **aanpassen** zodat de base-constructor wordt aangeroepen
 
 ~~~cs
-basket.AddNewItem(new BasketItem(price, description, quantity));
+    public class QuantityBasketItem : BasketItem 
+    {
+        //---
+        public QuantityBasketItem(int price, string description, int quantity = 1) : base(description)
+        {
+            Price = price;
+            Quantity = quantity;
+        }
+        //...
+        //!!!! Verwijderen van Description-property
+    }
 ~~~
 
-te wijzigen naar 
+Als 3de wijziging, vergeet hier ook niet bij de **Description-property** te **verwijderen**, deze valt nu onder BasketItem
+en zal dus gedeeld worden over de verschillende klassen die overerven van BasketItem...
+
+Als laatste stap moeten we aan TotalPrice, IncrementQuantity en DecrementQuantity de modifier **override** toevoegen om er voor te 
+zorgen dat altijd de implementatie van de QuantityBasketItem wordt gebruikt!!!
 
 ~~~cs
-basket.AddNewItem(new QuantityBasketItem(price, description, quantity));
+    public class QuantityBasketItem : BasketItem 
+    {
+        //...
+        //!!!! Verwijderen van Description-property
+
+        public override int TotalPrice 
+        {      
+            get { return Price * Quantity; }
+        }
+        
+        public override int IncrementQuantity()
+        {
+            return ++Quantity;
+        }
+
+        public override int DecrementQuantity()
+        {
+            return --Quantity;
+        }
+    }
 ~~~
 
-De rest van de code zal nog steeds met BasketItem werken
+#### Commit maken: Create BasketItem-hierarchy
 
-#### Testen en committen
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor "Create BasketItem-hierarchy"
 
-Test nu je programma, dit zou nog altijd het zelfde moeten werken (zonder regressie)
 
-### Stap2: BulkBasketItem gebruiken
+### Aanpassingen in Basket.cs en Program.cs
+
+De bedoeling is dat we nu verschillende soorten BasketItem's kunnen gebruiken.  
+Alvorens nieuwe implementatie toe te voegen zorgen we nu dat Basket-klasse **BasketItem**-objecten gaat bevatten (ipv QuantityBasketItem).  
+
+#### Basket.cs aanpassen
+
+De 1ste step is alle voorkomens van **QuantityBasketItem** aan te passen naar **BasketItem**  
+Dit start bij de Items-property zoals je hier ziet...
+
+~~~cs
+    public class Basket
+    {
+        public List<BasketItem> Items {get;private set;} = new List<BasketItem>();
+        //...
+
+    }
+~~~
+
+Je gaat daarna ook binnen alle methodes en properties de signatuur moeten aanpassen:
+
+~~~cs
+    public bool ItemProvidedInBasket(BasketItem item) 
+    {
+        //...
+    }
+
+    public int TotalBasketPrice 
+    {
+        //...
+            foreach (BasketItem item in Items)
+        //...
+    }
+
+    public BasketItem Lookup(string description)
+    {
+        //...
+            foreach(BasketItem item in Items) 
+        //...        
+    }
+~~~
+
+
+#### Program.cs aanpassen
+
+Nu de Basket-klasse enkel nog maar BasketItem's gebruikt moet er binnen de Program-klasse ook nog de expliciete verwijzingen
+naar QuantityBasketItem vervangen worden door verwijzingen naar BasketItem.  
+
+Bijvoorbeeld zal basket.Lookup() nu een BasketItem terug geven
+
+~~~cs
+public class Program
+{
+    //...
+    private static void DecrementOrIncrement(Basket basket)
+    {
+        string itemDescription = ReadString("Welk item (beschrijving)");
+        BasketItem selectedItem = basket.Lookup(itemDescription);
+    //...
+}
+~~~
+
+Daarnaast zal de code moeten aangepast die alle items afdrukt...
+
+~~~cs
+    //...
+    private static void PrintAllItems(Basket basket)
+    {
+        foreach (BasketItem item in basket.Items)
+        {
+            Console.WriteLine($"{item.Quantity} maal {item.Description} voor {item.Price} per item, totaal {item.TotalPrice}");
+        }
+    }
+    //...
+~~~
+
+...vervangen moeten worden door...
+
+~~~cs
+    //...
+    private static void PrintAllItems(Basket basket)
+    {
+        foreach (BasketItem item in basket.Items)
+        {
+            Console.WriteLine(item);
+        }
+    }
+    //...
+~~~
+
+#### QuantityBasketItem.ToString()
+
+Hiervoor gaan we wel de **ToString()**-functie **implementeren** binnen **QuantityBasketItem** opdat
+de correcte beschrijving wordt afgedrukt:
+
+~~~cs
+
+public class QuantityBasketItem 
+{
+    //...
+    public override string ToString()
+    {
+        return $"{Quantity} maal {Description} voor {Price} per item, totaal {TotalPrice}";
+    }
+}
+
+~~~
+
+#### Testen en committen: "Using BasketItem from Basket instead of QuantityBasketItem"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor "Using BasketItem from Basket instead of QuantityBasketItem"
+
+
+### Toevoegen van nieuw soort item: BulkBasketItem
+
+Op deze moment zijn we klaar om **verschillende soorten BasketItem's** te gebruiken.  
+We voegen nu een nieuwe klasse **BulkBasketItem** toe, deze 
+
+* Zal nu gewichten bevatten die in gram worden uitgedrukt
+* Een prijs per kilo bevatten
+
+Je mag deze **toevoegen** als volgt:
 
 ~~~cs
 namespace PRB.ShoppingBasket.Bart
 {
     public class BulkBasketItem : BasketItem
     {
-        int _pricePerKilo;
-        int _weight;
-        public BulkBasketItem(int pricePerKilo, string description, int weight):base(description)
+        private int _pricePerKilo;
+        private int _weightInGrams;
+        
+        public BulkBasketItem(int pricePerKilo, string description, int weightInGrams = 1000) : base(description)
         {
-            Weight = weight;
-            Description = description;
             PricePerKilo = pricePerKilo;
+            WeightInGrams = weightInGrams;
+        }
+
+        public int WeightInGrams
+        {
+            get
+            {
+                return _weightInGrams;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowedException("gewicht");
+                }
+                
+                _weightInGrams = value;
+            }
         }
 
         public int PricePerKilo
@@ -1773,44 +1915,297 @@ namespace PRB.ShoppingBasket.Bart
             {
                 if (value < 0)
                 {
-                    throw new NoNegativeAmountAllowed("prijs per item");
+                    throw new NoNegativeAmountAllowedException("prijs");
                 }
                 _pricePerKilo = value;
             }
         }
 
-        public int Weight
+        public override int TotalPrice => PricePerKilo * WeightInGrams / 1000;
+
+        public override int IncrementQuantity()
         {
-            get
-            {
-                return _weight;
-            }
-            private set
-            {
-                if (value < 0)
-                {
-                    throw new NoNegativeAmountAllowed("gewicht");
-                }
-                _weight = value;
-            }
+            WeightInGrams += 100;
+            return WeightInGrams;
+        }
+        public override int DecrementQuantity()
+        {
+            WeightInGrams -= 100;
+            return WeightInGrams;
         }
 
-        //Divide by 1000 as
-        public int TotalPrice
+        public override string ToString()
         {
-            get { return (PricePerKilo * Weight) / 1000; }
+            return $"{WeightInGrams} gram {Description} voor {PricePerKilo} per kilo, totaal {TotalPrice}";
         }
-
-        public string Description { get; private set; }
     }
 }
 ~~~
 
-### ToString() gebruiken
+Bemerk ook dat hier **TotalPrice, IncrementQuantity en DecrementQuantity** **andere** **gedragingen** hebben.  
+Daarnaast hebben we ook een **expliciete implementatie** voorzien voor **ToString** opdat we correct de gegevens kunnen meegeven bij het afprinten van de lijst van BasketItems.
+
+#### Testen en committen: "Adding BulkBasketItem (new type of BasketItem)"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor "Adding BulkBasketItem (new type of BasketItem)"
+
+### Toevoegen van BulkBasketItem
+
+#### Aanpassen Program.cs
+
+Tot nu toe hadden we code zoals hieronder die werd uitgevoerd bij de menu-keuze
+om een nieuwe BasketItem toe te voegen...
+
+~~~cs
+    private static void AskForNewItem(Basket basket)
+    {
+        int price = ReadInt("Geef prijs");
+        string description = ReadString("Geef omschrijving");
+        int quantity = ReadInt("Geef hoeveelheid");
+        try
+        {
+            basket.AddNewItem(new QuantityBasketItem(price, description, quantity));
+        //...
+~~~
+
+Vanaf nu gaan we deze code aanpassen naar de code hieronder waar de gebruiker de keuze laten
+van **verschillende types toe te voegen**.
+
+Hier gaan we dit herschrijven als volgt
+
+~~~cs
+    private static void AskForNewItem(Basket basket)
+    {
+        int choice = RequestChoices(
+            "Gelieve een type te kiezen", 
+            "Gewoon item", "Bulk item");
+
+        switch (choice)
+        {
+            case 1 : CreateNewQuantityItem(basket); break;
+            case 2 : CreateNewBulkItem(basket); break;
+            default: throw new InvalidOperationException();
+        }
+    }
+~~~
+
+Hiervoor wordt er een nieuwe generieke functie toegevoegd **RequestChoices**
+die je toelaat van keuze te maken tussen 1 of meerdere keuzes.
+
+Deze functie geeft een nummer terug van 1 tot en met het aantal keuzes waarmee 
+je kan beslissen **of** je een **QuantityBasketItem** of **BulkBasketItem** aanmaakt:
+
+~~~cs
+        private static int RequestChoices(string question, params string[] choices)
+        {
+            int counter = 0;
+            Console.WriteLine(question);
+            foreach (var choice in choices)
+            {
+                counter++;
+                Console.WriteLine($"{counter}. {choice}");
+            }
+
+            int numberPicked = 0;
+            do
+            {
+                numberPicked = ReadInt($"Gelieve keuze tussen tussen 1 en {choices.Length} te geven");
+            } while (numberPicked < 1 || numberPicked > choices.Length);
+     
+            return numberPicked;
+        }
+~~~
+
+In geval dat deze 1 returned komt dit overeen met een QuantityBasketItem, bij 2 met een BulkBasketItem
+
+~~~cs
+            case 1 : CreateNewQuantityItem(basket); break;
+            case 2 : CreateNewBulkItem(basket); break;
+~~~
+
+Er zijn dan 2 verschillende functies verantwoordelijk om ofwel een **QuantityBasketItem** aan te maken...
+
+~~~cs
+    private static void CreateNewQuantityItem(Basket basket)
+    {
+        int price = ReadInt("Geef prijs");
+        string description = ReadString("Geef omschrijving");
+        int quantity = ReadInt("Geef hoeveelheid");
+        AddItemToBasket(basket, new QuantityBasketItem(price, description, quantity));
+    }
+~~~
+
+... ofwel een **BulkBasketItem** aan te maken ...
+
+~~~cs
+    private static void CreateNewBulkItem(Basket basket)
+    {
+        int pricePerKilo = ReadInt("Geef prijs per kilo");
+        string description = ReadString("Geef omschrijving");
+        int grams = ReadInt("Geef hoeveelheid in gram");
+        
+        AddItemToBasket(basket, new BulkBasketItem(pricePerKilo, description, grams));
+    }
+~~~
+
+Om uiteindelijk een item toe te voegen aan een Basket voer je onderstaande functie uit.  
+Deze functie bevat de gemeenschappelijke afhandeling (excepties) die hoort bij het toevoegen van een nieuwe item.
+
+~~~cs
+    private static void AddItemToBasket(Basket basket, BasketItem item)
+    {
+        try
+        {
+            basket.AddNewItem(item);
+        }    
+        catch(NoNegativeAmountAllowedException e)
+        {
+            Console.WriteLine($"Geen negatief getal toegelaten voor {e.Element}");
+        }
+        catch (ItemAlreadyInBasketException e)
+        {
+            Console.WriteLine($"Het item met beschrijving {e.Description} bestaat reeds");
+        }
+    }
+~~~
+
+#### Testen en committen: "Provide possibility to enter BulkBasketItem"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor "Provide possibility to enter BulkBasketItem"
 
 ## Code schrijven (deel 5): Abstracties en interfaces
 
+Het probleem is nog altijd dat we een BasketItem kunnen aanmaken zoals je hieronder ziet.  
+
+~~~cs
+BasketItem item = new BasketItem("Dit heeft geen zin");
+~~~
+
 ### BasketItem abstract maken
 
-### IBasketItem toevoegen
+#### Klasse abstract maken
+
+Om te vermijden dat je dit kan aanmaken kan je dus ook de klasse BasketItem abstract maken.  
+Dit doe je door het keyword abstract toe te voegen aan de klasse-definitie.
+
+~~~cs
+public abstract class BasketItem 
+{
+    //...
+}
+~~~
+
+Het gevolg hier is dat je niet rechtstreeks meer een BasketItem kan aanmaken (met new) maar
+dat je een van de "children" (QuantityBasketItem of BulkBasketItem) moet gebruiken.
+
+#### Methodes abstract maken
+
+De klasse beschermen is 1 aspect, we kunnen echter nog verder gaan door de methodes abstract te maken.  
+Momenteel hebben we voor de virtuele properties en functies een default implementatie voorzien.  
+
+~~~cs
+public abstract class BasketItem 
+{
+    //...
+    public virtual int TotalPrice 
+    {      
+        get { return 0; }
+    }
+    //...
+}
+~~~
+
+De implementatie hiervan is eigenlijk een beetje zinloos en je loopt zelfs het risico dat
+overervende klassen (children) deze vergeten te implementeren.
+
+Om die reden kan je die methodes en properties ook abstract maken.  
+Dit doe je door een abstract-modifier toe te voegen aan de definitie van de methode.
+
+~~~cs
+public abstract class BasketItem 
+{
+    //...
+        public abstract int TotalPrice { get; }
+
+        public abstract int IncrementQuantity();
+
+        public abstract int DecrementQuantity();
+}
+~~~
+
+Nieuwe (of bestaande) klassen die nu overerven van BasketItem gaan nu verplicht
+zijn deze methodes en properties te implementeren...
+
+#### Testen en committen: "Make BasketItem abstract"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor "Provide possibility to enter BulkBasketItem"
+
+### IBasketItem-interface toevoegen
+
+Een **laatste wijziging** die we nog kunnen toevoegen is het toevoegen van interface.  
+Voeg de volgende interface-definitie IBasketItem toe.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart;
+
+public interface IBasketItem
+{
+    string Description { get; }
+    int TotalPrice { get; }
+    int IncrementQuantity();
+    int DecrementQuantity();
+}
+~~~
+
+Deze is nu volledig losgekoppeld van eender welke klasse en kan
+hierdoor rechtstreeks gebruikt worden binnen Basket.
+
+Zorg wel dat alle klassen deze interface implementeren, dit kan je
+doen door BasketItem de interface IBasketItem te laten implementeren.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public abstract class BasketItem : IBasketItem
+    {
+        public BasketItem(string description)
+        {
+            Description = description;
+        }
+
+        public string Description { get; private set; }
+        
+        public abstract int TotalPrice { get; }
+
+        public abstract int IncrementQuantity();
+
+        public abstract int DecrementQuantity();
+    }
+}
+~~~
+
+Zorg er vervolgens wel voor dat de Basket en Program-klasse gebruik maakt van
+deze IBasketItem-abstractie...
+
+~~~cs
+public class Basket
+{
+    public List<IBasketItem> Items {get;private set;} = new List<IBasketItem>();
+
+    public bool ItemProvidedInBasket(IBasketItem item) 
+    {
+        //...
+    }
+    
+
+    public IBasketItem Lookup(string description)
+    {
+        //...
+    }
+}
+~~~
+
 

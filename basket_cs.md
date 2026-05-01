@@ -2209,3 +2209,64 @@ public class Basket
 ~~~
 
 
+## Herwerken naar modules (deel 5)
+
+### Stap 1: Aanmaken van een command line
+
+* We voegen een nieuwe een nieuw project toe aan de solution
+* PRB.ShoppingBasket.<name>.CMD waar je name vervangt door je eigen naam zoals bij het oorspronkelijke project
+* Dit project heeft een dependency op het oorspronkelijke project PRB.ShoppingBasket.<name>
+
+#### Afhankelijkheid toevoegen in Visual Code
+
+* Ga naar de solution explorer
+* Click met de rechtermuisknop op PRB.ShoppingBasket.<name>.Cmd
+* Selecteer "Add Reference"
+* Kies PRB.ShoppingBasket.<name>
+  
+#### Afhankelijkheid toevoegen in Rider
+
+
+#### Afhankelijkheid toevoegen in Visual Studio
+
+
+#### Wat gebeurt er als een afhankelijkheid toevoegt
+
+~~~bash
+dotnet reference add lib/lib.csproj --project app/app.csproj
+~~~
+
+
+~~~xml
+...
+    <ItemGroup>
+      <ProjectReference Include="..\PRB.ShoppingBasket.Bart\PRB.ShoppingBasket.Bart.csproj" />
+    </ItemGroup>
+...
+~~~
+
+### Stap 2: Aanmaken van een nieuwe MVC-component
+
+Voeg reeds de packages toe nodig voor Entity Framework.  
+We maken hier gebruik van Sqlite in 1ste instantie...
+
+~~~bash
+dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+dotnet add package Microsoft.EntityFrameworkCore.Design
+dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
+~~~
+
+We voorzien reeds
+
+~~~cs
+using Microsoft.EntityFrameworkCore;
+using PRB.ShoppingBasket.Bart;
+
+namespace PRG.ShoppingBasket.Bart.MVC.Models;
+
+public class BasketDbContext : DbContext
+{
+    public DbSet<Basket> Baskets { get; set; }
+}
+~~~

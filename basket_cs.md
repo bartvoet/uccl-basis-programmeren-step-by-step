@@ -2480,7 +2480,7 @@ Hier **testen** we niet of er een **gewone waarde** wordt teruggegeven, maar of 
 
 #### Testen en committen: "Add tests for QuantityBasketItem"
 
-Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Als de **testen** succesvol zijn kan je een nieuwe **commit** te produceren...  
 Gebruik hiervoor *"Add tests for QuantityBasketItem"*
 
 ### Unit test voor Basket
@@ -2583,10 +2583,22 @@ namespace PRB.ShoppingBasket.Bart.Tests
 
 #### Testen en committen: "Add tests for Basket"
 
-Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Als de **testen** succesvol zijn kan je een nieuwe **commit** te produceren... 
 Gebruik hiervoor *"Add tests for Basket"*
 
-### Unit testen vs step-by-step
+### Testen voor BulkBasketItem
+
+We hebben ondertussen testen toegevoegd voor **Basket** en **QuantityBasketItem**,
+dus je zou min of meer al moeten begrijpen hoe dit werkt en wat je kan testen.  
+
+Zet nu de oefening verder met gelijkaardige testen toe voor **BulkBasketItem**.
+
+#### Testen en committen: "Add tests for BulkBasketItem"
+
+Als de **testen** succesvol zijn kan je een nieuwe **commit** te produceren... 
+Gebruik hiervoor *"Add tests for BulkBasketItem"*
+
+### Conclusie: Unit testen vs step-by-step
 
 Unit testing betekent dat we kleine onderdelen van onze applicatie automatisch testen.  
 Voor deze oefening testen we vooral de logica in onze klassen getest.
@@ -2608,62 +2620,537 @@ Op die manier kunnen we onze applicatie stap voor stap uitbreiden zonder telkens
 
 ## Herwerken naar modules (deel 7)
 
-### Stap 1: Aanmaken van een command line
+Tot nu toe staat onze applicatie grotendeels in één project.  
+Dat is voor kleine oefeningen geen probleem, maar bij grotere applicaties willen we onze code beter **opsplitsen**.
 
-* We voegen een nieuwe een nieuw project toe aan de solution
-* PRB.ShoppingBasket.<name>.CMD waar je name vervangt door je eigen naam zoals bij het oorspronkelijke project
-* Dit project heeft een dependency op het oorspronkelijke project PRB.ShoppingBasket.<name>
+We gaan onze solution daarom opdelen in meerdere projecten:
+
+* Een project met het **model** en de **business-logica**
+* Een project voor de **command line applicatie**
+* Een project voor een **MVC webapplicatie**
+
+Op die manier kunnen we dezelfde logica hergebruiken in meerdere soorten applicaties.
+
+Bijvoorbeeld:
+
+* De command line gebruikt de `Basket`, `BasketItem`, `QuantityBasketItem`, ...
+* De MVC-applicatie gebruikt dezelfde `Basket`, `BasketItem`, `QuantityBasketItem`, ...
+* De logica hoeft dus niet opnieuw geschreven te worden
+
+### Gewenste structuur
+
+**Na** deze **herwerking** willen we ongeveer de **volgende structuur** bekomen:
+
+~~~text
+PRB.ShoppingBasket.Bart
+│
+├── PRB.ShoppingBasket.Bart
+│   ├── Basket.cs
+│   ├── BasketItem.cs
+│   ├── QuantityBasketItem.cs
+│   ├── BulkBasketItem.cs
+│   └── ...
+│
+├── PRB.ShoppingBasket.Bart.CMD
+│   └── Program.cs
+│
+├── PRB.ShoppingBasket.Bart.Web
+│   ├── Controllers
+│   ├── Models
+│   ├── Views
+│   └── ...
+│
+└── PRB.ShoppingBasket.Bart.sln
+~~~
+
+Het project `PRB.ShoppingBasket.Bart` bevat dan de **herbruikbare logica**.  
+Het project `PRB.ShoppingBasket.Bart.CMD` bevat enkel de **command line interface**.  
+Het project `PRB.ShoppingBasket.Bart.Web` bevat de **MVC webapplicatie**.
+
+> In de voorbeelden hieronder gebruiken we opnieuw `Bart` als naam.  
+> Vervang `Bart` telkens door je eigen naam.
+
+### Stap 1: Aanmaken van een command line project
+
+We voegen eerst een nieuw project toe aan de solution.
+
+Dit project noemen we:
+
+~~~text
+PRB.ShoppingBasket.Bart.CMD
+~~~
+
+Dit wordt een gewone **Console App**.
+
+De bedoeling is dat alle code die met `Console.ReadLine()` en `Console.WriteLine()` werkt, verhuist naar dit nieuwe command line project.  
+Het oorspronkelijke project `PRB.ShoppingBasket.Bart` wordt dan gebruikt als **model-project** of **library-project**.
+
+Dat betekent:
+
+* `Basket.cs` blijft in `PRB.ShoppingBasket.Bart`
+* `BasketItem.cs` blijft in `PRB.ShoppingBasket.Bart`
+* `QuantityBasketItem.cs` blijft in `PRB.ShoppingBasket.Bart`
+* `BulkBasketItem.cs` blijft in `PRB.ShoppingBasket.Bart`
+* `Program.cs` verhuist naar `PRB.ShoppingBasket.Bart.CMD`
+
+Het **command line project** heeft dus een **dependency** nodig op het **oorspronkelijke project**.
 
 #### Afhankelijkheid toevoegen in Visual Code
 
 * Ga naar de solution explorer
-* Click met de rechtermuisknop op PRB.ShoppingBasket.<name>.Cmd
-* Selecteer "Add Reference"
-* Kies PRB.ShoppingBasket.<name>
-  
+* Klik met de rechtermuisknop op `PRB.ShoppingBasket.Bart.CMD`
+* Selecteer **Add Reference**
+* Kies `PRB.ShoppingBasket.Bart`
+* Bevestig de keuze
+
 #### Afhankelijkheid toevoegen in Rider
 
+In **JetBrains Rider** kan je een project reference toevoegen via de solution explorer.
+
+* Klik met de rechtermuisknop op het project `PRB.ShoppingBasket.Bart.CMD`
+* Kies **Add**
+* Kies **Reference**
+* Selecteer het project `PRB.ShoppingBasket.Bart`
+* Bevestig met **OK** of **Add**
+
+Daarna kan het command line project de klassen uit het model-project gebruiken.
+
+Bijvoorbeeld:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+~~~
+
+Als Rider de namespace niet onmiddellijk herkent, kan je eventueel het project opnieuw builden:
+
+~~~bash
+dotnet build
+~~~
 
 #### Afhankelijkheid toevoegen in Visual Studio
 
+In **Visual Studio** kan je een project reference toevoegen via de Solution Explorer.
 
-#### Wat gebeurt er als een afhankelijkheid toevoegt
+* Klik met de rechtermuisknop op het project `PRB.ShoppingBasket.Bart.CMD`
+* Kies **Add**
+* Kies **Project Reference...**
+* Selecteer het project `PRB.ShoppingBasket.Bart`
+* Klik op **OK**
 
-~~~bash
-dotnet reference add lib/lib.csproj --project app/app.csproj
-~~~
+Daarna is het oorspronkelijke project beschikbaar vanuit het command line project.
 
-
-~~~xml
-...
-    <ItemGroup>
-      <ProjectReference Include="..\PRB.ShoppingBasket.Bart\PRB.ShoppingBasket.Bart.csproj" />
-    </ItemGroup>
-...
-~~~
-
-### Stap 2: Aanmaken van een nieuwe MVC-component
-
-Voeg reeds de packages toe nodig voor Entity Framework.  
-We maken hier gebruik van Sqlite in 1ste instantie...
-
-~~~bash
-dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
-dotnet add package Microsoft.EntityFrameworkCore.Sqlite
-dotnet add package Microsoft.EntityFrameworkCore.Design
-dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
-~~~
-
-We voorzien reeds
+Ook hier kan je dan bovenaan in `Program.cs` de namespace gebruiken:
 
 ~~~cs
-using Microsoft.EntityFrameworkCore;
+using PRB.ShoppingBasket.Bart;
+~~~
+
+#### Command line project aanmaken met VS Code
+
+Navigeer in de terminal naar de folder waar de solution staat.
+
+Maak daarna een nieuw consoleproject aan:
+
+~~~bash
+dotnet new console -n PRB.ShoppingBasket.Bart.CMD --use-program-main
+~~~
+
+Voeg het nieuwe project toe aan de solution:
+
+~~~bash
+dotnet sln add PRB.ShoppingBasket.Bart.CMD/PRB.ShoppingBasket.Bart.CMD.csproj
+~~~
+
+Voeg daarna een reference toe naar het model-project:
+
+~~~bash
+dotnet add PRB.ShoppingBasket.Bart.CMD/PRB.ShoppingBasket.Bart.CMD.csproj reference PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
+~~~
+
+Daarna kan je de applicatie uitvoeren met:
+
+~~~bash
+dotnet run --project PRB.ShoppingBasket.Bart.CMD
+~~~
+
+#### Testen en committen: "Adding a separate Command Line Module"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor *"Adding a separate Command Line Module"*
+
+### Intermezzo: Wat gebeurt er als je een afhankelijkheid toevoegt?
+
+Wanneer je een project reference toevoegt, wordt er eigenlijk een verwijzing toegevoegd in het `.csproj`-bestand van het project dat de dependency nodig heeft.
+
+Via de command line kan dat bijvoorbeeld met:
+
+~~~bash
+dotnet add app/app.csproj reference lib/lib.csproj
+~~~
+
+Toegepast op onze oefening wordt dat ongeveer:
+
+~~~bash
+dotnet add PRB.ShoppingBasket.Bart.CMD/PRB.ShoppingBasket.Bart.CMD.csproj reference PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
+~~~
+
+In het `.csproj`-bestand van `PRB.ShoppingBasket.Bart.CMD` verschijnt dan een extra `ProjectReference`.
+
+~~~xml
+<ItemGroup>
+  <ProjectReference Include="..\PRB.ShoppingBasket.Bart\PRB.ShoppingBasket.Bart.csproj" />
+</ItemGroup>
+~~~
+
+Dit betekent dat het project `PRB.ShoppingBasket.Bart.CMD` de code uit `PRB.ShoppingBasket.Bart` mag gebruiken.
+
+De richting van de afhankelijkheid is belangrijk:
+
+~~~text
+PRB.ShoppingBasket.Bart.CMD
+        gebruikt
+PRB.ShoppingBasket.Bart
+~~~
+
+Het model-project mag dus niets weten van het command line project.  
+De logica moet onafhankelijk blijven van de manier waarop ze gebruikt wordt.
+
+### Stap 2: Code verplaatsen naar het command line project
+
+In de 2de stap kunnen we de **verantwoordelijkheden** nu (beter) gaan **scheiden**.
+
+Het model-project bevat enkel nog klassen met logic zoals o.a. Basket, BasketItem, QuantityBasketItem, BulkBasketItem, ...   
+Daarnaast IBasketItem en alle exceptions blijven ook binnen deze 
+
+Het command line project zelf gaat nu enkel bevatten wat specifiek is voor de console.  
+Verplaats dus de code uit `Program.cs` naar het project `PRB.ShoppingBasket.Bart.CMD`.
+
+Bij de verplaatsing zorg er voor dat je de namespace aanpast naar PRB.ShoppingBasket.<Naam>.CMD
+
+~~~cs
+
 using PRB.ShoppingBasket.Bart;
 
-namespace PRG.ShoppingBasket.Bart.MVC.Models;
-
-public class BasketDbContext : DbContext
+namespace PRB.ShoppingBasket.Bart.CMD
 {
-    public DbSet<Basket> Baskets { get; set; }
+    public class Program
+    {
+        //... Bestaande code zou nog altijd moeten werken 
+        //... indien je de dependencies goed hebt aangepast
+    }
 }
 ~~~
+
+In het oorspronkelijke project gaan we zo dadelijk je `Program.cs` verwijderen maar hiervoor dienen
+we nog een extra aanpassing te doen.  
+Zorg er daarvoor eerst dat je de klasse - in het oorspronkelijke project volledige leeg maakt zoals hieronder...
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart
+{
+    public class Program
+    {
+        
+    }
+}
+~~~
+
+#### Testen en committen: "Moving Program.cs to CMD-project"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor *"Adding a separate Command Line Module"*
+
+### Stap 3: Het oorspronkelijke project 'zuiver' maken
+
+Het oorspronkelijke project `PRB.ShoppingBasket.Bart` bevat nu geen echte applicatie meer, maar enkel nog herbruikbare code.  
+Dat soort project noemen we vaak een **class library**.
+
+Een class library:
+
+* Heeft geen eigen `Main`-methode
+* Wordt **niet rechtstreeks** uitgevoerd
+* Wordt **gebruikt** door **andere projecten**
+* Bevat herbruikbare klassen en logica
+
+In ons geval wordt dit project gebruikt door:
+
+* `PRB.ShoppingBasket.Bart.CMD`
+* Later ook door `PRB.ShoppingBasket.Bart.Web`
+* Vanzelfsprekend door het **testproject**
+
+#### Project omzetten naar Class Library in Visual Studio
+
+In **Visual Studio** kan je dit aanpassen via de projecteigenschappen
+
+* Klik met de rechtermuisknop op het project `PRB.ShoppingBasket.Bart`
+* Kies **Properties**
+* Ga naar **Application**
+* Zoek de instelling **Output type**
+* Verander deze van **Console Application** naar **Class Library**
+* Sla de wijziging op
+
+#### Project omzetten naar Class Library in Rider
+
+In **JetBrains Rider** kan je het oorspronkelijke project omzetten naar een **Class Library** via de project properties.
+
+* Klik met de rechtermuisknop op het project `PRB.ShoppingBasket.Bart`
+* Kies **Properties**
+* Ga naar **Application**
+* Zoek de instelling **Output type**
+* Verander deze van **Console Application** naar **Class Library**
+* Sla de wijziging op
+
+Rider past hierdoor achter de schermen het `.csproj`-bestand aan.  
+Je hoeft het `.csproj`-bestand dus niet manueel te wijzigen.
+
+#### Project omzetten naar Class Library in VS Code
+
+In **VS Code** doen we dit via het `.csproj`-bestand.
+
+Open het bestand:
+
+~~~text
+PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
+~~~
+
+Als het project oorspronkelijk als consoleproject werd aangemaakt, zie je waarschijnlijk iets zoals:
+
+~~~xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+~~~
+
+De lijn:
+
+~~~xml
+<OutputType>Exe</OutputType>
+~~~
+
+zorgt ervoor dat het project als uitvoerbare applicatie wordt gebouwd.
+
+Voor een class library verwijderen we deze lijn.
+
+Het `.csproj`-bestand wordt dan:
+
+~~~xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+~~~
+
+#### Verwijder Program.cs uit het oorspronkelijke project
+
+Verwijder daarna eventueel de oude `Program.cs` uit `PRB.ShoppingBasket.Bart`, aangezien de command line code nu in het project `PRB.ShoppingBasket.Bart.CMD` staat.
+
+#### Testen en committen: "Remove Program.cs from Base-project"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor *"Remove Program.cs from Base-project"*
+
+### Stap 4: Aanmaken van een nieuwe MVC-component
+
+Nu voegen we een 3de project **ASP.NET Core MVC-project** toe.  
+We geven dit de naam **ASP.NET Core MVC-project**, de bedoeling is dat dit project een **webinterface** aanbiedt bovenop dezelfde **basket-logica**.
+
+Beide **PRB.ShoppingBasket.Bart.CMD** en **PRB.ShoppingBasket.Bart.Web** zullen dan een afhankelijkheid hebben op 
+Tussen `CMD` en `Web` zal er geen afhankelijkheid zijn!!
+
+#### MVC-project aanmaken met Visual Studio
+
+In **Visual Studio** kan je een MVC-project toevoegen via de Solution Explorer.
+
+* Klik met de rechtermuisknop op de solution
+* Kies **Add**
+* Kies **New Project**
+* Selecteer **ASP.NET Core Web App (Model-View-Controller)**
+* Geef het project de naam `PRB.ShoppingBasket.Bart.Web`
+* Kies het gewenste .NET-framework
+* Maak het project aan
+
+Voeg daarna een project reference toe:
+
+* Klik met de rechtermuisknop op `PRB.ShoppingBasket.Bart.Web`
+* Kies **Add**
+* Kies **Project Reference...**
+* Selecteer `PRB.ShoppingBasket.Bart`
+* Klik op **OK**
+
+Daarna kan je het webproject starten met de groene run-knop.
+
+#### MVC-project aanmaken met Rider
+
+In **Rider** kan je een MVC-project toevoegen via de solution explorer.
+
+* Klik met de rechtermuisknop op de solution
+* Kies **Add**
+* Kies **New Project**
+* Selecteer een **ASP.NET Core Web App (Model-View-Controller)**
+* Geef het project de naam `PRB.ShoppingBasket.Bart.Web`
+* Maak het project aan
+
+Voeg daarna een reference toe naar het model-project:
+
+* Klik met de rechtermuisknop op `PRB.ShoppingBasket.Bart.Web`
+* Kies **Add**
+* Kies **Reference**
+* Selecteer `PRB.ShoppingBasket.Bart`
+* Bevestig de keuze
+
+Daarna kan je het MVC-project starten via de run-knop bovenaan in Rider.
+
+#### MVC-project aanmaken met VS Code
+
+Navigeer naar de folder waar de solution staat.
+
+Maak een nieuw MVC-project aan:
+
+~~~bash
+dotnet new mvc -n PRB.ShoppingBasket.Bart.Web
+~~~
+
+Voeg het MVC-project toe aan de solution:
+
+~~~bash
+dotnet sln add PRB.ShoppingBasket.Bart.Web/PRB.ShoppingBasket.Bart.Web.csproj
+~~~
+
+Voeg daarna een reference toe naar het model-project:
+
+~~~bash
+dotnet add PRB.ShoppingBasket.Bart.Web/PRB.ShoppingBasket.Bart.Web.csproj reference PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
+~~~
+
+Start de webapplicatie met:
+
+~~~bash
+dotnet run --project PRB.ShoppingBasket.Bart.Web
+~~~
+
+In de terminal verschijnt daarna een URL waarop de applicatie bereikbaar is, bijvoorbeeld:
+
+~~~text
+https://localhost:7001
+~~~
+
+of:
+
+~~~text
+http://localhost:5000
+~~~
+
+#### Testen en committen: "Adding MVC-components"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Zorg er voor dat je zowel:
+
+* De CMD-app kan starten
+* De testen nog altijd groen zijn
+* De web-applicatie kan draaien 
+
+Gebruik hiervoor *"Adding MVC-components"*
+
+### Stap 5: Eerste gebruik van het model in MVC
+
+Om te controleren of de MVC-applicatie het model-project correct kan gebruiken, passen we tijdelijk de `HomeController` aan.
+
+Open:
+
+~~~text
+PRB.ShoppingBasket.Bart.Web/Controllers/HomeController.cs
+~~~
+
+Voeg bovenaan de namespace van het model toe:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+~~~
+
+In de `Index`-actie kunnen we tijdelijk een basket aanmaken:
+
+~~~cs
+public IActionResult Index()
+{
+    Basket basket = new Basket();
+
+    basket.AddNewItem(new QuantityBasketItem(10, "Cola", 2));
+    basket.AddNewItem(new BulkBasketItem(4, "Bloem", 1500));
+
+    ViewBag.TotalPrice = basket.TotalBasketPrice;
+
+    return View();
+}
+~~~
+
+Daarna kunnen we in de view `Index.cshtml` deze waarde tonen.
+
+Open:
+
+~~~text
+PRB.ShoppingBasket.Bart.Web/Views/Home/Index.cshtml
+~~~
+
+Voeg bijvoorbeeld toe:
+
+~~~html
+<p>Totale prijs van test-winkelmandje: @ViewBag.TotalPrice</p>
+~~~
+
+Als je nu de MVC-applicatie start, zou je op de startpagina de totaalprijs moeten zien.
+
+Dit is nog geen volledige webapplicatie, maar het bewijst wel dat:
+
+* Het MVC-project correct werkt
+* Het MVC-project het model-project kan gebruiken
+* De basket-logica herbruikbaar is buiten de command line applicatie
+
+#### Testen en committen: "Testing dependency from Web to Domain"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+**Controleer** of de **webpagina** opent en de **totaalprijs** toont.
+
+Gebruik hiervoor *"Testing dependency from Web to Domain"*
+
+### Samengevat
+
+In dit deel hebben we onze applicatie opgesplitst in meerdere projecten.
+
+We hebben:
+
+* Een apart command line project gemaakt
+* De consolecode verhuisd naar `PRB.ShoppingBasket.Bart.CMD`
+* Het oorspronkelijke project herwerkt naar een model/library-project
+* Een MVC-project toegevoegd
+* Het MVC-project gekoppeld aan dezelfde basket-logica
+
+De uiteindelijke afhankelijkheden zijn:
+
+~~~text
+PRB.ShoppingBasket.Bart.CMD
+        |
+        v
+PRB.ShoppingBasket.Bart
+
+
+PRB.ShoppingBasket.Bart.Web
+        |
+        v
+PRB.ShoppingBasket.Bart
+~~~
+
+Het model-project staat centraal.  
+Zowel de command line applicatie als de MVC-applicatie gebruiken dezelfde onderliggende logica.
+

@@ -2208,8 +2208,405 @@ public class Basket
 }
 ~~~
 
+#### Testen en committen: "Provide an interface IBasketItem"
 
-## Herwerken naar modules (deel 5)
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor "Provide an interface IBasketItem"
+
+## Code schrijven (deel 6): Unit testing
+
+Tot nu toe hebben we onze applicatie vooral **manueel getest**:
+
+* We **starten** het programma
+* We **kiezen** opties in het **menu**
+* We **typen** **waarden** in
+* We **controleren** zelf of de output klopt
+
+Dat is een goede **1ste stap**, maar bij grotere applicaties wordt dit al snel **tijdrovend** en **foutgevoelig**.
+
+Telkens wanneer we iets wijzigen, moeten we namelijk opnieuw controleren of:
+
+* De nieuwe functionaliteit werkt
+* De oude functionaliteit nog altijd werkt
+
+Dat laatste noemen we **regressie-testen**.
+
+### Waarom unit testing?
+
+Bij **unit testing** gaan we **kleine** stukjes **code** **automatisch** testen.  
+Een **unit** is meestal een kleine, afgebakende eenheid code, bijvoorbeeld:
+
+* Een klasse
+* Een methode
+* Een property
+* Een combinatie van enkele methodes
+
+In onze applicatie kunnen we bijvoorbeeld de klasse `BasketItem` of `Basket` testen zonder het volledige consoleprogramma **manueel** te moeten doorlopen.
+
+Unit testing zal ons helpen om:
+
+* **Fouten sneller** te **vinden**
+* Bestaande functionaliteit te **beschermen** tegen **regressie**
+* Met meer **vertrouwen** **code** te **wijzigen**
+* Onze code **stap voor stap** verder uit te bouwen
+
+### Wat testen we?
+
+Niet alles is even gemakkelijk of nuttig om rechtstreeks te testen.
+
+Code die sterk afhangt van `Console.ReadLine()` en `Console.WriteLine()` is moeilijker automatisch te testen, omdat die interactie vraagt met een gebruiker.
+
+Daarom testen we vooral de **logica** die in onze klassen zit.
+
+Voorbeelden uit onze applicatie:
+
+* Een `BasketItem` berekent correct zijn totaalprijs
+* Een negatieve prijs of hoeveelheid wordt geweigerd
+* Een `Basket` kan items toevoegen
+* Een `Basket` berekent correct de totaalprijs
+* Een `Basket` laat niet toe dat hetzelfde item twee keer wordt toegevoegd
+
+### Testproject toevoegen
+
+In professionele C#-projecten plaatsen we testen meestal in een **apart testproject**.
+
+Een mogelijke structuur wordt dan:
+
+~~~text
+PRB.ShoppingBasket.Bart
+│
+├── PRB.ShoppingBasket.Bart
+│   ├── Program.cs
+│   ├── Basket.cs
+│   ├── BasketItem.cs
+│   └── ...
+│
+└── PRB.ShoppingBasket.Bart.Tests
+    ├── BasketItemTests.cs
+    └── BasketTests.cs
+~~~
+
+Het hoofdproject bevat de echte applicatie.  
+Het testproject bevat enkel automatische testen.
+
+> We maken gebruik van XUnit-framework  
+> Zie https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices  
+> Er zijn naast XUnit ook nog NUnit en MSTest, de basis-functionaliteiten die je hieronder ziet zijn heel gelijkaardig
+
+#### Testproject Visual Studio
+
+In **Visual Studio** kan je een testproject toevoegen via:
+
+* Rechtermuisknop op de solution
+* **Add**
+* **New Project**
+* Kies bijvoorbeeld **xUnit Test Project**
+* Geef het project de naam `PRB.ShoppingBasket.Bart.Tests`
+
+Daarna moet het testproject nog een verwijzing krijgen naar het hoofdproject:
+
+* Rechtermuisknop op het testproject
+* **Add**
+* **Project Reference**
+* Selecteer `PRB.ShoppingBasket.Bart`
+
+#### Testproject toevoegen met Rider
+
+Werk je met **JetBrains Rider**, dan kan je ook daar een apart testproject toevoegen aan je solution.
+
+Een mogelijke werkwijze is:
+
+* Klik met de rechtermuisknop op de **solution**
+* Kies **Add**
+* Kies **New Project**
+* Selecteer bij de templates een **xUnit Test Project**
+* Geef het project de naam `PRB.ShoppingBasket.Bart.Tests`
+* Maak het project aan
+
+Daarna moet het testproject nog een verwijzing krijgen naar het hoofdproject:
+
+* Klik met de rechtermuisknop op het testproject `PRB.ShoppingBasket.Bart.Tests`
+* Kies **Add**
+* Kies **Reference**
+* Selecteer het hoofdproject `PRB.ShoppingBasket.Bart`
+* Bevestig de keuze
+
+Rider zal de nodige testpackages normaal automatisch toevoegen aan het testproject.  
+Daarna kan je testklassen toevoegen, bijvoorbeeld `BasketTests.cs` of `QuantityBasketItemTests.cs`.
+
+Om de testen uit te voeren kan je:
+
+* Op het groene icoontje naast een test klikken
+* Of alle testen uitvoeren via het **Unit Tests**-venster
+
+Als alles correct werkt, krijg je een groene aanduiding bij de geslaagde testen.
+
+#### Testproject toevoegen met VS Code
+
+Werk je met **Visual Studio Code**, dan kan je het testproject het gemakkelijkst toevoegen via de **terminal**.
+
+Navigeer eerst naar de folder waar je solution staat.  
+Daarna kan je een nieuw **xUnit-testproject** aanmaken met het volgende commando:
+
+~~~bash
+dotnet new xunit -n PRB.ShoppingBasket.Bart.Tests
+~~~
+
+Voeg daarna het testproject toe aan de solution:
+
+~~~bash
+dotnet sln add PRB.ShoppingBasket.Bart.Tests/PRB.ShoppingBasket.Bart.Tests.csproj
+~~~
+
+Daarna moet het testproject nog een verwijzing krijgen naar het hoofdproject:
+
+~~~bash
+dotnet add PRB.ShoppingBasket.Bart.Tests/PRB.ShoppingBasket.Bart.Tests.csproj reference PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
+~~~
+
+De structuur van je project ziet er dan ongeveer zo uit:
+
+~~~text
+PRB.ShoppingBasket.Bart
+│
+├── PRB.ShoppingBasket.Bart
+│   ├── Program.cs
+│   ├── Basket.cs
+│   ├── BasketItem.cs
+│   └── ...
+│
+├── PRB.ShoppingBasket.Bart.Tests
+│   ├── UnitTest1.cs
+│   └── PRB.ShoppingBasket.Bart.Tests.csproj
+│
+└── PRB.ShoppingBasket.Bart.sln
+~~~
+
+Je kan `UnitTest1.cs` eventueel hernoemen naar bijvoorbeeld `BasketTests.cs`.
+
+Om alle testen uit te voeren gebruik je:
+
+~~~bash
+dotnet test
+~~~
+
+Als alles correct is ingesteld, zal je in de terminal zien hoeveel testen geslaagd of gefaald zijn.
+
+In VS Code kan je eventueel ook gebruik maken van de **Test Explorer**.  
+Daarmee kan je testen uitvoeren via de interface in plaats van via de terminal.
+
+#### Testen en committen: "Add testproject"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor *"Add testproject"*
+
+### Eerste unit test voor BasketItem
+
+Stel dat we een `QuantityBasketItem` hebben met:
+
+* prijs: `10`
+* omschrijving: `"Cola"`
+* hoeveelheid: `3`
+
+Dan verwachten we dat de totale prijs `30` is.
+
+Een test zou er als volgt kunnen uitzien:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Tests
+{
+    public class QuantityBasketItemTests
+    {
+        [Fact]
+        public void TotalPrice_ReturnsPriceMultipliedByQuantity()
+        {
+            // Arrange
+            QuantityBasketItem item = new QuantityBasketItem(10, "Cola", 3);
+
+            // Act
+            int totalPrice = item.TotalPrice;
+
+            // Assert
+            Assert.Equal(30, totalPrice);
+        }
+    }
+}
+~~~
+
+Een test bestaat typisch uit drie delen:
+
+* **Arrange:** we zetten de testdata klaar
+* **Act:** we voeren de actie uit die we willen testen
+* **Assert:** we controleren of het resultaat klopt
+
+Deze structuur noemen we ook vaak **AAA**: Arrange, Act, Assert.
+
+#### Testen of een exception wordt opgegooid
+
+We hebben eerder voorzien dat negatieve bedragen niet toegelaten zijn.  
+Dat kunnen we ook automatisch testen.
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Tests
+{
+    public class QuantityBasketItemTests
+    {
+        [Fact]
+        public void Constructor_WithNegativePrice_ThrowsException()
+        {
+            Assert.Throws<NoNegativeAmountAllowedException>(() =>
+            {
+                new QuantityBasketItem(-10, "Cola", 3);
+            });
+        }
+
+        [Fact]
+        public void Constructor_WithNegativeQuantity_ThrowsException()
+        {
+            Assert.Throws<NoNegativeAmountAllowedException>(() =>
+            {
+                new QuantityBasketItem(10, "Cola", -3);
+            });
+        }
+    }
+}
+~~~
+
+Hier **testen** we niet of er een **gewone waarde** wordt teruggegeven, maar of de juiste **exceptie** wordt opgegooid.
+
+#### Testen en committen: "Add tests for QuantityBasketItem"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor *"Add tests for QuantityBasketItem"*
+
+### Unit test voor Basket
+
+Ook de klasse `Basket` bevat logica die we kunnen testen.
+
+Bijvoorbeeld: als we twee items toevoegen, moet de totaalprijs correct berekend worden.
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Tests
+{
+    public class BasketTests
+    {
+        [Fact]
+        public void TotalBasketPrice_ReturnsSumOfAllItems()
+        {
+            // Arrange
+            Basket basket = new Basket();
+
+            basket.AddNewItem(new QuantityBasketItem(10, "Cola", 3));
+            basket.AddNewItem(new QuantityBasketItem(5, "Chips", 2));
+
+            // Act
+            int totalPrice = basket.TotalBasketPrice;
+
+            // Assert
+            Assert.Equal(40, totalPrice);
+        }
+    }
+}
+~~~
+
+De berekening is hier:
+
+~~~text
+Cola:  10 * 3 = 30
+Chips:  5 * 2 = 10
+Totaal:       = 40
+~~~
+
+#### Testen dat hetzelfde item niet twee keer mag worden toegevoegd
+
+We kunnen ook testen dat onze eigen exception `ItemAlreadyInBasketException` correct gebruikt wordt.
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Tests
+{
+    public class BasketTests
+    {
+        [Fact]
+        public void AddNewItem_WithSameDescriptionTwice_ThrowsException()
+        {
+            // Arrange
+            Basket basket = new Basket();
+
+            basket.AddNewItem(new QuantityBasketItem(10, "Cola", 1));
+
+            // Act + Assert
+            Assert.Throws<ItemAlreadyInBasketException>(() =>
+            {
+                basket.AddNewItem(new QuantityBasketItem(20, "Cola", 2));
+            });
+        }
+    }
+}
+~~~
+
+Hier controleren we of twee items met dezelfde beschrijving niet allebei in hetzelfde winkelmandje terechtkomen.
+
+#### Wat als er nog geen items inzitten?
+
+Voor onze `Basket`-klasse kunnen we bijvoorbeeld ook nog testen wat de totaalprijs is van een leeg winkelmandje:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Tests
+{
+    public class BasketTests
+    {
+        [Fact]
+        public void TotalBasketPrice_EmptyBasket_ReturnsZero()
+        {
+            // Arrange
+            Basket basket = new Basket();
+
+            // Act
+            int totalPrice = basket.TotalBasketPrice;
+
+            // Assert
+            Assert.Equal(0, totalPrice);
+        }
+    }
+}
+~~~
+
+#### Testen en committen: "Add tests for Basket"
+
+Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+Gebruik hiervoor *"Add tests for Basket"*
+
+### Unit testen vs step-by-step
+
+Unit testing betekent dat we kleine onderdelen van onze applicatie automatisch testen.  
+Voor deze oefening testen we vooral de logica in onze klassen getest.
+
+We testen minder de console-interactie zelf, omdat die afhankelijk is van input van de gebruiker.  
+Dit wil niet zeggen dat dit niet dient getest te worden, in zulke gevallen ga je gebruiken van een aantal extra technieken
+zoals mocking, integratietesten, ...
+
+Deze technieken kom later nog aan bod in de opleiding
+
+Door unit tests te combineren met Git krijgen we een veilige werkwijze:
+
+* Kleine wijziging maken
+* Automatisch testen
+* Committen
+* Verder bouwen
+
+Op die manier kunnen we onze applicatie stap voor stap uitbreiden zonder telkens bang te moeten zijn dat bestaande functionaliteit ongemerkt kapot gaat.
+
+## Herwerken naar modules (deel 7)
 
 ### Stap 1: Aanmaken van een command line
 

@@ -3154,3 +3154,427 @@ PRB.ShoppingBasket.Bart
 Het model-project staat centraal.  
 Zowel de command line applicatie als de MVC-applicatie gebruiken dezelfde onderliggende logica.
 
+## Toevoegen van Identity (deel 8)
+
+In dit hoofdstuk voegen we **ASP.NET Core Identity** toe aan onze MVC-applicatie.
+
+**Identity** is het standaardmechanisme binnen ASP.NET Core om authenticatie, authorisatie toe te voegen aan een webapplicatie.  
+
+Naast het beveiligen van controllers en pagina's laat het ons toe om functionaliteit te voorzien zoals:
+
+* Gebruikers registreren
+* Gebruikers aanmelden
+* Gebruikers afmelden
+
+### Toevoegen van Identity
+
+Voor deze oefening gebruiken we **SQLite** als database.  
+Daarin worden de gebruikers, rollen en bijhorende Identity-gegevens opgeslagen.
+
+De Identity-functionaliteit zal worden toegevoegd aan het **MVC-project** met de nodige uitleg voor Visual Studio, Rider en VS Code
+
+### Stap 1: Dependencies toevoegen aan het Web-project
+
+Om Identity te gebruiken moeten we eerst een aantal dependencies toevoegen aan het **webproject**
+
+~~~text
+Microsoft.AspNetCore.Identity.EntityFrameworkCore
+Microsoft.AspNetCore.Identity.UI
+Microsoft.EntityFrameworkCore.Sqlite
+Microsoft.EntityFrameworkCore.Design
+Microsoft.EntityFrameworkCore.Tools
+Microsoft.VisualStudio.Web.CodeGeneration.Design
+~~~
+
+#### Dependencies toevoegen met Visual Studio
+
+In **Visual Studio** kan je NuGet-packages toevoegen via de NuGet Package Manager.
+
+* Klik met de rechtermuisknop op het MVC-project, bijvoorbeeld `PRB.ShoppingBasket.Bart.Web`
+* Kies **Manage NuGet Packages**
+* Ga naar het tabblad **Browse**
+* En installeer de bovenvermelde packages
+
+#### Dependencies toevoegen met Rider
+
+In **JetBrains Rider** kan je NuGet-packages toevoegen via de NuGet-interface.
+
+* Klik met de rechtermuisknop op het MVC-project, bijvoorbeeld `PRB.ShoppingBasket.Bart.Web`
+* Kies **Manage NuGet Packages**
+* En installeer de bovenvermelde packages
+
+#### Dependencies toevoegen met VS Code
+
+In **Visual Studio Code** voeg je de packages toe via de terminal.
+
+Navigeer eerst naar het MVC-project:
+
+~~~bash
+cd PRB.ShoppingBasket.Bart.Web
+~~~
+
+Voeg daarna de packages toe:
+
+~~~bash
+dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
+dotnet add package Microsoft.AspNetCore.Identity.UI
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+dotnet add package Microsoft.EntityFrameworkCore.Design
+dotnet add package Microsoft.EntityFrameworkCore.Tools
+dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
+~~~
+
+### Stap 2: ApplicationDbContext toevoegen
+
+We gaan Identity gebruiken met "Individual Accounts" dit betekent dat we het beheer gaan doen 
+via de database.  
+
+Het startpunt hiervoor is het aanmaken van een **IdentityDbContext**  
+Voeg daarom de volgende klasse toe aan de Model-folder
+
+~~~cs
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace PRB.ShoppingBasket.Bart.Web.Data
+{
+    public class ApplicationDbContext : IdentityDbContext
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+    }
+}
+~~~
+
+> Nota: als je Identity toevoegt bij de start in Visual Studio maakt deze een Data-folder aan.  
+> Voor de éénvoud gaan we hier dit echter in de Model-folder houden.
+
+### Stap 4: appsettings.json aanpassen
+
+We starten met het configureren van een datasource.  
+Open de file "appsettings.json" en voeg de connection string toe:
+
+~~~json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=basket.db"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
+~~~
+
+We gebruiken de naam **basket.db** gezien we deze in volgende stap ook gaan hergebruiken voor het gewone model.  
+
+> De SQLite-database zal later worden aangemaakt als we de migrations uitvoeren.
+
+
+### Stap 5: Program.cs aanpassen
+
+We passen nu in het MVC-project Program.cs aan
+
+We voegen de nodige imports toe
+
+~~~cs
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using PRB.ShoppingBasket.Bart.Web.Data;
+~~~
+
+Voeg daarna, vóór `builder.Build()`, de configuratie voor SQLite en Identity toe.  
+Daarnaast voeg je via `.AddRoles<IdentityRole>()` ook nog de mogelijk toe om rollen te gebruiken.
+
+~~~cs
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(connectionString));
+
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+~~~
+
+Vervolgens voeg je in de middleware-pipeline, vóór de route-mapping, authentication en authorization toe.
+
+~~~cs
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapRazorPages();
+
+app.Run();
+~~~
+
+Let wel op de volgorde, `UseAuthentication()` moet vóór `UseAuthorization()` staan.
+
+~~~cs
+app.UseAuthentication();
+app.UseAuthorization();
+~~~
+
+### Stap 6: Migrations uitvoeren op Identity
+
+#### Migrations uitvoeren met Visual Studio
+
+In Visual Studio kan je migrations uitvoeren via de **Package Manager Console**.
+
+Open deze via:
+
+* **Tools**
+* **NuGet Package Manager**
+* **Package Manager Console**
+
+Controleer bovenaan in de Package Manager Console dat het **Default project** ingesteld staat op je MVC-project en voer daarna uit:
+
+~~~powershell
+Add-Migration InitIdentity
+Update-Database
+~~~
+
+Na deze stap wordt de SQLite-database basket.db aangemaakt
+
+#### Migrations uitvoeren met Rider
+
+Rider heeft ondersteuning voor Entity Framework Core-commando's via de interface.
+
+Zorg eerst dat `dotnet-ef` geïnstalleerd is:
+
+~~~bash
+dotnet tool install --global dotnet-ef
+~~~
+
+Als de tool al geïnstalleerd is:
+
+~~~bash
+dotnet tool update --global dotnet-ef
+~~~
+
+Daarna kan je in Rider een migration toevoegen:
+
+* Klik met de rechtermuisknop op het MVC-project `PRB.ShoppingBasket.Bart.Web`
+* Kies **Entity Framework Core**
+* Kies **Add Migration**
+* Geef als naam InitIdentity
+
+Controleer dat de juiste `DbContext` geselecteerd is ApplicationDbContext.  
+Daarna update je de database:
+
+* Klik met de rechtermuisknop op het MVC-project
+* Kies **Entity Framework Core**
+* Kies **Update Database**
+
+Na deze stap wordt de SQLite-database basket.db aangemaakt
+
+#### Stap 7: Migrations uitvoeren met VS Code
+
+In VS Code voer je migrations uit via de terminal.
+
+Zorg eerst dat `dotnet-ef` geïnstalleerd is:
+
+~~~bash
+dotnet tool install --global dotnet-ef
+~~~
+
+Als de tool al geïnstalleerd is:
+
+~~~bash
+dotnet tool update --global dotnet-ef
+~~~
+
+Navigeer daarna naar het MVC-project:
+
+~~~bash
+cd PRB.ShoppingBasket.Bart.Web
+~~~
+
+Maak de migration:
+
+~~~bash
+dotnet ef migrations add InitIdentity
+~~~
+
+Update daarna de database:
+
+~~~bash
+dotnet ef database update
+~~~
+
+Na deze stap wordt de SQLite-database basket.db aangemaakt
+
+### Stap 8: Identity scaffolden
+
+#### Identity scaffolden met Visual Studio
+
+In Visual Studio kan je Identity via de interface scaffolden.
+
+* Klik met de rechtermuisknop op het MVC-project
+* Kies **Add**
+* Kies **New Scaffolded Item...**
+* Kies links **Identity**
+* Klik op **Add**
+
+Daarna krijg je een venster waarin je kan kiezen welke Identity-pagina's je wil toevoegen.  
+Selecteer bijvoorbeeld:
+
+* `Account\Register`
+* `Account\Login`
+* `Account\Logout`
+
+Kies bij **Data context class** je bestaande context ApplicationDbContext.  
+Bevestig daarna de scaffolding, Visual Studio voegt dan de nodige bestanden Areas/Identity/Pages/Account toe
+
+> Als Visual Studio vraagt om extra packages te installeren, bevestig dit dan.
+
+#### Identity scaffolden met Rider
+
+In **JetBrains Rider** kan je Identity ook scaffolden via het menu.
+
+* Klik met de rechtermuisknop op het MVC-project `PRB.ShoppingBasket.Bart.Web`
+* Kies **Add**
+* Kies **Scaffolded Item...**
+* Kies bij de beschikbare scaffolders **Identity**
+* Klik op **Next** of **Add**
+
+Daarna krijg je een venster waarin je kan aanduiden welke Identity-pagina's je wil toevoegen.
+
+Selecteer bijvoorbeeld:
+
+* `Account.Register`
+* `Account.Login`
+* `Account.Logout`
+
+Kies daarna bij **Data context class** je bestaande context **ApplicationDbContext** en bevestig daarna de scaffolding.  
+Rider voegt nu de Identity-bestanden toe onder de folder:
+
+~~~text
+Areas
+└── Identity
+    └── Pages
+        └── Account
+            ├── Login.cshtml
+            ├── Login.cshtml.cs
+            ├── Logout.cshtml
+            ├── Logout.cshtml.cs
+            ├── Register.cshtml
+            └── Register.cshtml.cs
+~~~
+
+Als Rider vraagt om extra packages te herstellen of het project opnieuw te builden, bevestig dit dan.
+
+#### Identity scaffolden met VS Code
+
+In VS Code scaffold je Identity via de terminal.
+
+Installeer eerst de code generator indien nodig (dit zou in deze fase van de cursus reeds ok moeten zijn)
+
+~~~bash
+dotnet tool install -g dotnet-aspnet-codegenerator
+~~~
+
+Of update de tool:
+
+~~~bash
+dotnet tool update -g dotnet-aspnet-codegenerator
+~~~
+
+Voer daarna in de folder van het MVC-project uit:
+
+~~~bash
+dotnet aspnet-codegenerator identity \
+  -dc PRB.ShoppingBasket.Bart.Web.Data.ApplicationDbContext \
+  --files "Account.Register;Account.Login;Account.Logout"
+~~~
+
+Op Windows PowerShell of in een terminal waar multiline commands lastig zijn gebruik je het in 1 lijn
+
+~~~powershell
+dotnet aspnet-codegenerator identity -dc PRB.ShoppingBasket.Bart.Web.Data.ApplicationDbContext --files "Account.Register;Account.Login;Account.Logout"
+~~~
+
+### Stap 9: Login partial toevoegen
+
+Open "Views/Shared/_Layout.cshtml", zoek de navigatiebalk en voeg daar toe:
+
+~~~html
+<partial name="_LoginPartial" />
+~~~
+
+Bijvoorbeeld:
+
+~~~html
+<div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+    <ul class="navbar-nav flex-grow-1">
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </li>
+    </ul>
+
+    <partial name="_LoginPartial" />
+</div>
+~~~
+
+Mocht `_LoginPartial.cshtml` nog niet bestaat, maak deze dan aan in "Views/Shared/_LoginPartial.cshtml" met volgende inhoud:
+
+~~~shtml
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+
+<ul class="navbar-nav">
+@if (SignInManager.IsSignedIn(User))
+{
+    <li class="nav-item">
+        <span class="nav-link text-dark">Hallo @User.Identity?.Name!</span>
+    </li>
+    <li class="nav-item">
+        <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" method="post">
+            <button type="submit" class="nav-link btn btn-link text-dark">Logout</button>
+        </form>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Register</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
+    </li>
+}
+</ul>
+~~~
+
+### Stap 9: Applicatie starten en testen
+
+Start de applicate, controleer daarna in de browser of je links ziet voor:
+
+* Register
+* Login
+* Logout
+
+Maak nu een user aan en zorg dat je in en uitlogt...
+
+### Committen met "Adding Identity to the Web-project"
+
+Als de laatste stap goed werkt commit je wijzigingen met de boodschap "Adding Identity to the Web-project" 

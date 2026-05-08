@@ -2712,24 +2712,42 @@ Door **unit tests** te **combineren** met **Git** krijgen we een **veilige werkw
 
 Op die manier kunnen we onze applicatie stap voor stap uitbreiden zonder telkens bang te moeten zijn dat bestaande functionaliteit ongemerkt kapot gaat.
 
-## Herwerken naar modules (deel 7)
+## Herwerken naar modules -> solution en project (deel 7)
 
-Tot nu toe staat onze applicatie grotendeels in één project.  
-Dat is voor kleine oefeningen geen probleem, maar bij grotere applicaties willen we onze code beter **opsplitsen**.
+Tot nu toe staat onze applicatie grotendeels in **1 project**.  
+Dat is voor kleine oefeningen geen probleem, maar bij **grotere** **applicaties** willen we onze code beter **opsplitsen**.  
 
-We gaan onze solution daarom opdelen in meerdere projecten:
+**dotnet-solutions** kan je echter vrij gemakkelijk opdelen in **verschillende projecten**.  
+Zo'n opdelingen zorgen over het **algemeen** voor een betere **onderhoudbaarheid** van de code.
+
+We gaan onze **solution** daarom **opdelen** in meerdere **projecten**:
 
 * Een project met het **model** en de **business-logica**
 * Een project voor de **command line applicatie**
 * Een project voor een **MVC webapplicatie**
 
-Op die manier kunnen we dezelfde logica hergebruiken in meerdere soorten applicaties.
+Op die manier gaan we ook zien dat het dan mogelijk is **dezelfde** **logica** te **hergebruiken** 
+in meerdere soorten **user interfaces**.  
 
-Bijvoorbeeld:
+Op deze manier krijg je dan al een soort van **gelaagd model** waarin je de modules
+onafhankelijk van elkaar kan ontwikkelen
 
-* De command line gebruikt de `Basket`, `BasketItem`, `QuantityBasketItem`, ...
-* De MVC-applicatie gebruikt dezelfde `Basket`, `BasketItem`, `QuantityBasketItem`, ...
-* De logica hoeft dus niet opnieuw geschreven te worden
+~~~
++------------+------------+                      
+|            |            |                      
+|     MVC    |    CMD     |                      
+|            |            |                      
++------+-----+-----+------+                      
+       |           |                             
++------v-----------v------+      +--------------+
+|                         |      |              |
+|     LOGICA & MODEL      |<-----+    TEST      |
+|                         |      |              |
++-------------------------+      +--------------+
+~~~
+
+Beide CMD en MVC herbruiken de `Basket`, `BasketItem`, `QuantityBasketItem`, ...  
+De logica hoeft dus **niet opnieuw** geschreven te worden voor de verschillende UI/Views
 
 ### Gewenste structuur
 
@@ -2761,6 +2779,7 @@ Het project `PRB.ShoppingBasket.Bart` bevat dan de **herbruikbare logica**.
 Het project `PRB.ShoppingBasket.Bart.CMD` bevat enkel de **command line interface**.  
 Het project `PRB.ShoppingBasket.Bart.Web` bevat de **MVC webapplicatie**.
 
+> Nota:  
 > In de voorbeelden hieronder gebruiken we opnieuw `Bart` als naam.  
 > Vervang `Bart` telkens door je eigen naam.
 
@@ -2789,13 +2808,23 @@ Dat betekent:
 
 Het **command line project** heeft dus een **dependency** nodig op het **oorspronkelijke project**.
 
-#### Afhankelijkheid toevoegen in Visual Code
+#### Afhankelijkheid toevoegen in Visual Studio
 
-* Ga naar de solution explorer
-* Klik met de rechtermuisknop op `PRB.ShoppingBasket.Bart.CMD`
-* Selecteer **Add Reference**
-* Kies `PRB.ShoppingBasket.Bart`
-* Bevestig de keuze
+In **Visual Studio** kan je een project reference toevoegen via de Solution Explorer.
+
+* Klik met de rechtermuisknop op het project `PRB.ShoppingBasket.Bart.CMD`
+* Kies **Add**
+* Kies **Project Reference...**
+* Selecteer het project `PRB.ShoppingBasket.Bart`
+* Klik op **OK**
+
+Daarna is het oorspronkelijke project beschikbaar vanuit het command line project.
+
+Ook hier kan je dan bovenaan in `Program.cs` de namespace gebruiken:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+~~~
 
 #### Afhankelijkheid toevoegen in Rider
 
@@ -2819,24 +2848,6 @@ Als Rider de namespace niet onmiddellijk herkent, kan je eventueel het project o
 
 ~~~bash
 dotnet build
-~~~
-
-#### Afhankelijkheid toevoegen in Visual Studio
-
-In **Visual Studio** kan je een project reference toevoegen via de Solution Explorer.
-
-* Klik met de rechtermuisknop op het project `PRB.ShoppingBasket.Bart.CMD`
-* Kies **Add**
-* Kies **Project Reference...**
-* Selecteer het project `PRB.ShoppingBasket.Bart`
-* Klik op **OK**
-
-Daarna is het oorspronkelijke project beschikbaar vanuit het command line project.
-
-Ook hier kan je dan bovenaan in `Program.cs` de namespace gebruiken:
-
-~~~cs
-using PRB.ShoppingBasket.Bart;
 ~~~
 
 #### Command line project aanmaken met VS Code
@@ -2874,19 +2885,7 @@ Gebruik hiervoor *"Adding a separate Command Line Module"*
 
 ### Intermezzo: Wat gebeurt er als je een afhankelijkheid toevoegt?
 
-Wanneer je een project reference toevoegt, wordt er eigenlijk een verwijzing toegevoegd in het `.csproj`-bestand van het project dat de dependency nodig heeft.
-
-Via de command line kan dat bijvoorbeeld met:
-
-~~~bash
-dotnet add app/app.csproj reference lib/lib.csproj
-~~~
-
-Toegepast op onze oefening wordt dat ongeveer:
-
-~~~bash
-dotnet add PRB.ShoppingBasket.Bart.CMD/PRB.ShoppingBasket.Bart.CMD.csproj reference PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
-~~~
+Wanneer je een **project reference** toevoegt, wordt er eigenlijk een verwijzing toegevoegd in het `.csproj`-bestand van het project dat de dependency nodig heeft.
 
 In het `.csproj`-bestand van `PRB.ShoppingBasket.Bart.CMD` verschijnt dan een extra `ProjectReference`.
 
@@ -2898,15 +2897,9 @@ In het `.csproj`-bestand van `PRB.ShoppingBasket.Bart.CMD` verschijnt dan een ex
 
 Dit betekent dat het project `PRB.ShoppingBasket.Bart.CMD` de code uit `PRB.ShoppingBasket.Bart` mag gebruiken.
 
-De richting van de afhankelijkheid is belangrijk:
+De **richting** van de **afhankelijkheid** is **belangrijk** namelijk, PRB.ShoppingBasket.Bart.CMD gebruikt PRB.ShoppingBasket.Bart
 
-~~~text
-PRB.ShoppingBasket.Bart.CMD
-        gebruikt
-PRB.ShoppingBasket.Bart
-~~~
-
-Het model-project mag dus niets weten van het command line project.  
+Het model-project mag dus **niets weten** van het CMD-project.  
 De logica moet onafhankelijk blijven van de manier waarop ze gebruikt wordt.
 
 ### Stap 2: Code verplaatsen naar het command line project
@@ -3057,8 +3050,8 @@ Gebruik hiervoor *"Remove Program.cs from Base-project"*
 
 ### Stap 4: Aanmaken van een nieuwe MVC-component
 
-Nu voegen we een 3de project **ASP.NET Core MVC-project** toe.  
-We geven dit de naam **ASP.NET Core MVC-project**, de bedoeling is dat dit project een **webinterface** aanbiedt bovenop dezelfde **basket-logica**.
+Nu voegen we een **3de project** toe, in dit geval **ASP.NET Core MVC-project**.  
+We geven dit de naam `PRB.ShoppingBasket.<Name>.Web`, de bedoeling is dat dit project een **webinterface** aanbiedt bovenop dezelfde **basket-logica**.
 
 Beide **PRB.ShoppingBasket.Bart.CMD** en **PRB.ShoppingBasket.Bart.Web** zullen dan een afhankelijkheid hebben op 
 Tussen `CMD` en `Web` zal er geen afhankelijkheid zijn!!
@@ -3071,16 +3064,16 @@ In **Visual Studio** kan je een MVC-project toevoegen via de Solution Explorer.
 * Kies **Add**
 * Kies **New Project**
 * Selecteer **ASP.NET Core Web App (Model-View-Controller)**
-* Geef het project de naam `PRB.ShoppingBasket.Bart.Web`
+* Geef het project de naam `PRB.ShoppingBasket.<Name>.Web`
 * Kies het gewenste .NET-framework
 * Maak het project aan
 
 Voeg daarna een project reference toe:
 
-* Klik met de rechtermuisknop op `PRB.ShoppingBasket.Bart.Web`
+* Klik met de rechtermuisknop op `PRB.ShoppingBasket.<Name>.Web`
 * Kies **Add**
 * Kies **Project Reference...**
-* Selecteer `PRB.ShoppingBasket.Bart`
+* Selecteer `PRB.ShoppingBasket.<Name>`
 * Klik op **OK**
 
 Daarna kan je het webproject starten met de groene run-knop.
@@ -3093,15 +3086,15 @@ In **Rider** kan je een MVC-project toevoegen via de solution explorer.
 * Kies **Add**
 * Kies **New Project**
 * Selecteer een **ASP.NET Core Web App (Model-View-Controller)**
-* Geef het project de naam `PRB.ShoppingBasket.Bart.Web`
+* Geef het project de naam `PRB.ShoppingBasket.<Name>.Web`
 * Maak het project aan
 
 Voeg daarna een reference toe naar het model-project:
 
-* Klik met de rechtermuisknop op `PRB.ShoppingBasket.Bart.Web`
+* Klik met de rechtermuisknop op `PRB.ShoppingBasket.<Name>.Web`
 * Kies **Add**
 * Kies **Reference**
-* Selecteer `PRB.ShoppingBasket.Bart`
+* Selecteer `PRB.ShoppingBasket.<Name>`
 * Bevestig de keuze
 
 Daarna kan je het MVC-project starten via de run-knop bovenaan in Rider.
@@ -3113,25 +3106,25 @@ Navigeer naar de folder waar de solution staat.
 Maak een nieuw MVC-project aan:
 
 ~~~bash
-dotnet new mvc -n PRB.ShoppingBasket.Bart.Web
+dotnet new mvc -n PRB.ShoppingBasket.<Name>.Web
 ~~~
 
 Voeg het MVC-project toe aan de solution:
 
 ~~~bash
-dotnet sln add PRB.ShoppingBasket.Bart.Web/PRB.ShoppingBasket.Bart.Web.csproj
+dotnet sln add PRB.ShoppingBasket.Bart.Web/PRB.ShoppingBasket.<Name>.Web.csproj
 ~~~
 
 Voeg daarna een reference toe naar het model-project:
 
 ~~~bash
-dotnet add PRB.ShoppingBasket.Bart.Web/PRB.ShoppingBasket.Bart.Web.csproj reference PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.Bart.csproj
+dotnet add PRB.ShoppingBasket.Bart.Web/PRB.ShoppingBasket.<Name>.Web.csproj reference PRB.ShoppingBasket.Bart/PRB.ShoppingBasket.<Name>.csproj
 ~~~
 
 Start de webapplicatie met:
 
 ~~~bash
-dotnet run --project PRB.ShoppingBasket.Bart.Web
+dotnet run --project PRB.ShoppingBasket.<Name>.Web
 ~~~
 
 In de terminal verschijnt daarna een URL waarop de applicatie bereikbaar is, bijvoorbeeld:
@@ -3151,29 +3144,22 @@ http://localhost:5000
 Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
 Zorg er voor dat je zowel:
 
-* De CMD-app kan starten
-* De testen nog altijd groen zijn
-* De web-applicatie kan draaien 
+* De **CMD-app** kan starten
+* De **testen** nog altijd **groen** zijn
+* De **web-applicatie** kan draaien 
 
 Gebruik hiervoor *"Adding MVC-components"*
 
 ### Stap 5: Eerste gebruik van het model in MVC
 
-Om te controleren of de MVC-applicatie het model-project correct kan gebruiken, passen we tijdelijk de `HomeController` aan.
-
-Open:
-
-~~~text
-PRB.ShoppingBasket.Bart.Web/Controllers/HomeController.cs
-~~~
-
-Voeg bovenaan de namespace van het model toe:
+Om te controleren of de MVC-applicatie het model-project correct kan gebruiken, passen we tijdelijk de `HomeController` aan.  
+Open `PRB.ShoppingBasket.Bart.Web/Controllers/HomeController.cs` en voeg bovenaan de **namespace** van het **model** toe:
 
 ~~~cs
 using PRB.ShoppingBasket.Bart;
 ~~~
 
-In de `Index`-actie kunnen we tijdelijk een basket aanmaken:
+In de `Index`-actie kunnen we tijdelijk een `Basket` aanmaken:
 
 ~~~cs
 public IActionResult Index()
@@ -3191,19 +3177,13 @@ public IActionResult Index()
 
 Daarna kunnen we in de view `Index.cshtml` deze waarde tonen.
 
-Open:
-
-~~~text
-PRB.ShoppingBasket.Bart.Web/Views/Home/Index.cshtml
-~~~
-
-Voeg bijvoorbeeld toe:
+Open `PRB.ShoppingBasket.Bart.Web/Views/Home/Index.cshtml`, voeg toe:
 
 ~~~html
 <p>Totale prijs van test-winkelmandje: @ViewBag.TotalPrice</p>
 ~~~
 
-Als je nu de MVC-applicatie start, zou je op de startpagina de totaalprijs moeten zien.
+Als je nu de **MVC-applicatie** **start**, zou je op de startpagina deze **totaalprijs** moeten zien.
 
 Dit is nog geen volledige webapplicatie, maar het bewijst wel dat:
 
@@ -3220,7 +3200,7 @@ Gebruik hiervoor *"Testing dependency from Web to Domain"*
 
 ### Samengevat
 
-In dit deel hebben we onze applicatie opgesplitst in meerdere projecten.
+In dit deel hebben we onze applicatie **opgesplitst** in meerdere projecten.
 
 We hebben:
 
@@ -3230,40 +3210,41 @@ We hebben:
 * Een MVC-project toegevoegd
 * Het MVC-project gekoppeld aan dezelfde basket-logica
 
-De uiteindelijke afhankelijkheden zijn:
+De uiteindelijke **afhankelijkheden** zijn (zoals eerder vermeld):
 
 ~~~text
-PRB.ShoppingBasket.Bart.CMD
-        |
-        v
-PRB.ShoppingBasket.Bart
-
-
-PRB.ShoppingBasket.Bart.Web
-        |
-        v
-PRB.ShoppingBasket.Bart
++------------+------------+                      
+|            |            |                      
+|     MVC    |    CMD     |                      
+|            |            |                      
++------+-----+-----+------+                      
+       |           |                             
++------v-----------v------+      +--------------+
+|                         |      |              |
+|     LOGICA & MODEL      |<-----+    TEST      |
+|                         |      |              |
++-------------------------+      +--------------+
 ~~~
 
-Het model-project staat centraal.  
-Zowel de command line applicatie als de MVC-applicatie gebruiken dezelfde onderliggende logica.
+Het model-project staat **centraal**.  
+Zowel de **CMD**-applicatie als de **MVC**-applicatie **hergebruiken** dezelfde onderliggende logica.
 
 ## Toevoegen van Identity (deel 8)
 
-In dit hoofdstuk voegen we **ASP.NET Core Identity** toe aan onze MVC-applicatie.
+In dit hoofdstuk voegen we **ASP.NET Core Identity** toe aan onze **MVC**-applicatie.
 
-**Identity** is het standaardmechanisme binnen ASP.NET Core om authenticatie, authorisatie toe te voegen aan een webapplicatie.  
+**Identity** is het standaardmechanisme binnen ASP.NET Core om **authenticatie** en **authorisatie** toe te voegen aan een webapplicatie.  
 
-Naast het beveiligen van controllers en pagina's laat het ons toe om functionaliteit te voorzien zoals:
+Naast het **beveiligen** van **controllers** en **pagina's** laat het ons toe om functionaliteit te voorzien zoals:
 
-* Gebruikers registreren
-* Gebruikers aanmelden
-* Gebruikers afmelden
+* Gebruikers **registreren**
+* Gebruikers **aanmelden**
+* Gebruikers **afmelden**
 
 ### Toevoegen van Identity
 
 Voor deze oefening gebruiken we **SQLite** als database.  
-Daarin worden de gebruikers, rollen en bijhorende Identity-gegevens opgeslagen.
+Daarin worden de gebruikers, rollen en bijhorende **Identity-gegevens** **opgeslagen**.
 
 De Identity-functionaliteit zal worden toegevoegd aan het **MVC-project** met de nodige uitleg voor Visual Studio, Rider en VS Code
 
@@ -3320,7 +3301,7 @@ dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
 
 ### Stap 2: ApplicationDbContext toevoegen
 
-We gaan Identity gebruiken met "Individual Accounts" dit betekent dat we het beheer gaan doen 
+We gaan **Identity** gebruiken met **"Individual Accounts"**, dit betekent dat we het beheer gaan doen 
 via de database.  
 
 Het startpunt hiervoor is het aanmaken van een **IdentityDbContext**  
@@ -3342,13 +3323,14 @@ namespace PRB.ShoppingBasket.Bart.Web.Data
 }
 ~~~
 
-> Nota: als je Identity toevoegt bij de start in Visual Studio maakt deze een Data-folder aan.  
+> Nota:  
+> Als je Identity toevoegt bij de start in Visual Studio maakt deze een Data-folder aan.  
 > Voor de éénvoud gaan we hier dit echter in de Model-folder houden.
 
 ### Stap 4: appsettings.json aanpassen
 
-We starten met het configureren van een datasource.  
-Open de file "appsettings.json" en voeg de connection string toe:
+We starten met het **configureren** van een **datasource**.  
+Open de file "appsettings.json" en voeg de **connection string** toe:
 
 ~~~json
 {
@@ -3369,12 +3351,9 @@ We gebruiken de naam **basket.db** gezien we deze in volgende stap ook gaan herg
 
 > De SQLite-database zal later worden aangemaakt als we de migrations uitvoeren.
 
-
 ### Stap 5: Program.cs aanpassen
 
-We passen nu in het MVC-project Program.cs aan
-
-We voegen de nodige imports toe
+We passen nu in het **MVC**-project **Program.cs** aan en voegen de nodige imports toe
 
 ~~~cs
 using Microsoft.AspNetCore.Identity;
@@ -3400,7 +3379,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>();
 ~~~
 
-Vervolgens voeg je in de middleware-pipeline, vóór de route-mapping, authentication en authorization toe.
+Vervolgens voeg je in de **middleware-pipeline**, vóór de **route-mapping**, authentication en authorization toe.
 
 ~~~cs
 app.UseRouting();
@@ -3417,7 +3396,10 @@ app.MapRazorPages();
 app.Run();
 ~~~
 
-Let wel op de volgorde, `UseAuthentication()` moet vóór `UseAuthorization()` staan.
+2 belangrijke attentiepunten:
+
+* Kijk ook na of `app.MapRazorPages()` bij staat, dit is achter af voor de Identity-pages
+* Let wel op de volgorde, `UseAuthentication()` moet vóór `UseAuthorization()` staan.
 
 ~~~cs
 app.UseAuthentication();
@@ -3428,7 +3410,7 @@ app.UseAuthorization();
 
 #### Migrations uitvoeren met Visual Studio
 
-In Visual Studio kan je migrations uitvoeren via de **Package Manager Console**.
+In **Visual Studio** kan je **migrations** uitvoeren via de **Package Manager Console**.
 
 Open deze via:
 
@@ -3436,20 +3418,21 @@ Open deze via:
 * **NuGet Package Manager**
 * **Package Manager Console**
 
-Controleer bovenaan in de Package Manager Console dat het **Default project** ingesteld staat op je MVC-project en voer daarna uit:
+**Controleer** bovenaan in de **Package Manager** Console dat het **Default project** 
+ingesteld staat op je MVC-project en voer daarna uit:
 
 ~~~powershell
 Add-Migration InitIdentity
 Update-Database
 ~~~
 
-Na deze stap wordt de SQLite-database basket.db aangemaakt
+Na deze stap wordt de **SQLite-database basket.db** **aangemaakt**
 
 #### Migrations uitvoeren met Rider
 
-Rider heeft ondersteuning voor Entity Framework Core-commando's via de interface.
+Rider heeft ondersteuning voor **Entity Framework Core-commando's** via de **interface** (geen console nodig).
 
-Zorg eerst dat `dotnet-ef` geïnstalleerd is:
+Zorg wel eerst dat `dotnet-ef` geïnstalleerd is:
 
 ~~~bash
 dotnet tool install --global dotnet-ef
@@ -3461,7 +3444,10 @@ Als de tool al geïnstalleerd is:
 dotnet tool update --global dotnet-ef
 ~~~
 
-Daarna kan je in Rider een migration toevoegen:
+> Nota:  
+> Omdat je in deze fase van de cursus al EF hebt gezien zou dit al Ok moeten zijn...
+
+Daarna kan je in **Rider** een **migration** toevoegen:
 
 * Klik met de rechtermuisknop op het MVC-project `PRB.ShoppingBasket.Bart.Web`
 * Kies **Entity Framework Core**
@@ -3493,6 +3479,9 @@ Als de tool al geïnstalleerd is:
 dotnet tool update --global dotnet-ef
 ~~~
 
+> Nota:  
+> Omdat je in deze fase van de cursus al EF hebt gezien zou dit al Ok moeten zijn...
+
 Navigeer daarna naar het MVC-project:
 
 ~~~bash
@@ -3511,7 +3500,7 @@ Update daarna de database:
 dotnet ef database update
 ~~~
 
-Na deze stap wordt de SQLite-database basket.db aangemaakt
+Na deze stap wordt de **SQLite-database basket.db** aangemaakt
 
 ### Stap 8: Identity scaffolden
 

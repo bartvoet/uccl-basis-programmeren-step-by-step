@@ -2224,22 +2224,22 @@ Tot nu toe hebben we onze applicatie vooral **manueel getest**:
 
 Dat is een goede **1ste stap**, maar bij grotere applicaties wordt dit al snel **tijdrovend** en **foutgevoelig**.
 
-Telkens wanneer we iets wijzigen, moeten we namelijk opnieuw controleren of:
+Telkens wanneer we iets **wijzigen**, moeten we namelijk opnieuw **controleren** of:
 
-* De nieuwe functionaliteit werkt
-* De oude functionaliteit nog altijd werkt
+* De **nieuwe** functionaliteit **werkt**
+* De **oude** functionaliteit **nog** **altijd** **werkt**
 
-Dat laatste noemen we **regressie-testen**.
+> Dat laatste noemen we **regressie-testen**.
 
 ### Waarom unit testing?
 
 Bij **unit testing** gaan we **kleine** stukjes **code** **automatisch** testen.  
-Een **unit** is meestal een kleine, afgebakende eenheid code, bijvoorbeeld:
+Een **unit** is meestal een **kleine**, afgebakende eenheid code, bijvoorbeeld:
 
-* Een klasse
-* Een methode
-* Een property
-* Een combinatie van enkele methodes
+* Een **methode** of **functie**
+* Een **klasse**
+* Een **methode**
+* Een **property**
 
 In onze applicatie kunnen we bijvoorbeeld de klasse `BasketItem` of `Basket` testen zonder het volledige consoleprogramma **manueel** te moeten doorlopen.
 
@@ -2286,21 +2286,21 @@ PRB.ShoppingBasket.Bart
     └── BasketTests.cs
 ~~~
 
-Het hoofdproject bevat de echte applicatie.  
-Het testproject bevat enkel automatische testen.
+Het **hoofdproject** bevat de **echte applicatie**.  
+Het **testproject** bevat enkel **automatische testen**.
 
-> We maken gebruik van XUnit-framework  
-> Zie https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices  
-> Er zijn naast XUnit ook nog NUnit en MSTest, de basis-functionaliteiten die je hieronder ziet zijn heel gelijkaardig
+> We maken gebruik van XUnit-framework.  
+> Er zijn naast XUnit ook nog NUnit en MSTest, de basis-functionaliteiten die je hieronder ziet zijn heel gelijkaardig.  
+> Zie voor meer ook info naar https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices
 
 #### Testproject Visual Studio
 
-In **Visual Studio** kan je een testproject toevoegen via:
+Hoe zetten we dit nu op in Visual Studio (Rider en VS Code zie verder...)?  
+In **Visual Studio** kan je een testproject **toevoegen** via:
 
 * Rechtermuisknop op de solution
-* **Add**
-* **New Project**
-* Kies bijvoorbeeld **xUnit Test Project**
+* **Add** en dan **New Project**
+* Kies **xUnit Test Project** (er zijn ook andere testframeworks maar hier gebruiken we XUnit)
 * Geef het project de naam `PRB.ShoppingBasket.Bart.Tests`
 
 Daarna moet het testproject nog een verwijzing krijgen naar het hoofdproject:
@@ -2312,13 +2312,12 @@ Daarna moet het testproject nog een verwijzing krijgen naar het hoofdproject:
 
 #### Testproject toevoegen met Rider
 
-Werk je met **JetBrains Rider**, dan kan je ook daar een apart testproject toevoegen aan je solution.
+Werk je met **JetBrains Rider**, kan je (heel gelijkaardig aan Visual Studio) **ook** daar een **apart testproject** toevoegen aan je solution.
 
 Een mogelijke werkwijze is:
 
 * Klik met de rechtermuisknop op de **solution**
-* Kies **Add**
-* Kies **New Project**
+* Kies **Add** en **New Project**
 * Selecteer bij de templates een **xUnit Test Project**
 * Geef het project de naam `PRB.ShoppingBasket.Bart.Tests`
 * Maak het project aan
@@ -2331,7 +2330,7 @@ Daarna moet het testproject nog een verwijzing krijgen naar het hoofdproject:
 * Selecteer het hoofdproject `PRB.ShoppingBasket.Bart`
 * Bevestig de keuze
 
-Rider zal de nodige testpackages normaal automatisch toevoegen aan het testproject.  
+Rider zal de nodige **testpackages** normaal **automatisch** **toevoegen** aan het testproject.  
 Daarna kan je testklassen toevoegen, bijvoorbeeld `BasketTests.cs` of `QuantityBasketItemTests.cs`.
 
 Om de testen uit te voeren kan je:
@@ -2400,17 +2399,18 @@ Daarmee kan je testen uitvoeren via de interface in plaats van via de terminal.
 Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
 Gebruik hiervoor *"Add testproject"*
 
-### Eerste unit test voor BasketItem
+### Eerste unit test voor QuantityBasketItem
 
-Stel dat we een `QuantityBasketItem` hebben met:
+Laten we starten met een 1ste test...
+
+Hiervoor gaan we een een `QuantityBasketItem` met een bepaalde state testen:
 
 * prijs: `10`
 * omschrijving: `"Cola"`
 * hoeveelheid: `3`
 
-Dan verwachten we dat de totale prijs `30` is.
-
-Een test zou er als volgt kunnen uitzien:
+Bij deze state verwachten we dat de totale prijs `30` zal zijn.  
+Een test kan er dan als volgt kunnen uitzien:
 
 ~~~cs
 using PRB.ShoppingBasket.Bart;
@@ -2435,7 +2435,39 @@ namespace PRB.ShoppingBasket.Bart.Tests
 }
 ~~~
 
-Een test bestaat typisch uit drie delen:
+#### Fact-keyword om te markeren
+
+Zo'n test wordt geannoteerd met **Fact**, dit zorgt ervoor dat als je dit testproject uitvoert
+deze test automatisch zal worden gestart.
+
+~~~cs
+//...
+        [Fact]
+        public void TotalPrice_ReturnsPriceMultipliedByQuantity()
+//...
+~~~
+
+#### Assert-library om te valideren
+
+Binnen deze test gebruik je vervolgens het Assert-keyword om te valideren
+zoals hieronder geïllustreerd:
+
+~~~cs
+//...
+        Assert.Equal(30, totalPrice);
+//...
+~~~
+
+In dit geval drukken we uit dat we als uitkomst **30** verwachten als 1ste argument,
+het 2de argument is dat het de uitkomst die we willen toetsen...
+
+### Patronen voor Unit Tests
+
+Gemeenschappelijk aan de meeste (unit)test-frameworks zijn een aantal patronen
+
+#### AAA
+
+Deze test (en in zeer veel gevallen) bestaat typisch uit 3 delen:
 
 * **Arrange:** we zetten de testdata klaar
 * **Act:** we voeren de actie uit die we willen testen
@@ -2443,10 +2475,31 @@ Een test bestaat typisch uit drie delen:
 
 Deze structuur noemen we ook vaak **AAA**: Arrange, Act, Assert.
 
-#### Testen of een exception wordt opgegooid
+#### Test dient gefocust te zijn
 
-We hebben eerder voorzien dat negatieve bedragen niet toegelaten zijn.  
-Dat kunnen we ook automatisch testen.
+Let er ook op dat een unittest altijd gefocust is.  
+Dit wil zeggen je test meestal maar 1 ding of aspect van je code.  
+
+In het 1ste voorbeeld testen enkel de basiswerking van TotalPrice.  
+In ander test ga je dan weer focussen op andere varianten of items...
+
+#### De naam is (zeer) belangrijk
+
+Probeer in je test-methodes altijd een duidelijke naam te geven die beschrijft wat de test doet.  
+Probeer daar in mee te geven welke methode of property je test en ook wat je specifiek wil testen.  
+
+In ons voorbeeld **"TotalPrice_ReturnsPriceMultipliedByQuantity"** geven we aan:
+
+* We **testen** de **TotalPrice**-property
+* We kijken na of de **prijs** met de **hoeveelheid** wordt **vermenigvuldigd**
+
+### Testen of een exception wordt opgegooid (niet happy case)
+
+**Tot nog toe** hebben we een **happy case** of het normale "path" getest.  
+Bij Unit Testen wil je ook nagaan hoe dat de **code** **reageert** **als er zaken fout** lopen...
+
+We hebben bijvoorbeeld eerder voorzien dat negatieve bedragen niet toegelaten zijn.  
+Dat kunnen we dan ook automatisch testen.
 
 ~~~cs
 using PRB.ShoppingBasket.Bart;
@@ -2476,18 +2529,43 @@ namespace PRB.ShoppingBasket.Bart.Tests
 }
 ~~~
 
-Hier **testen** we niet of er een **gewone waarde** wordt teruggegeven, maar of de juiste **exceptie** wordt opgegooid.
+Bemerk hier ook dat we gewoon een **nieuwe testmethode** toevoegen aan dezelfde unit test-klasse...
+
+Hier **testen** we niet of er een **gewone waarde** wordt teruggegeven, maar of de juiste **exceptie** wordt opgegooid.   
+Hiervoor gebruiken we een specifieke functie van de Assert-library **Assert.Throws**
+
+Deze maakt gebruik van een lambda-expressie om de code (die fout loopt) te testen en op te vangen.  
+Alternatief is dat je deze test via onderstaande code, waar je de test opvangt en test of het type wel correct is.
+
+~~~cs
+        [Fact]
+        public void Constructor_WithNegativeQuantity_ThrowsException()
+        {
+            try
+            {
+                new QuantityBasketItem(10, "Cola", -3);
+                Assert.Fail("This path should not be reached.");
+            }
+            catch(NoNegativeAmountAllowedException e)
+            {
+                 Assert.IsType<NoNegativeAmountAllowedException>(e);
+            }
+        }
+~~~
+
+Let er ook op dat je expliciet een **Fail** aanroept mocht er toch geen exceptie
+worden opgeworpen
 
 #### Testen en committen: "Add tests for QuantityBasketItem"
 
 Als de **testen** succesvol zijn kan je een nieuwe **commit** te produceren...  
 Gebruik hiervoor *"Add tests for QuantityBasketItem"*
 
-### Unit test voor Basket
+### Nog unit-testen: Unit test voor Basket
 
 Ook de klasse `Basket` bevat logica die we kunnen testen.
 
-Bijvoorbeeld: als we twee items toevoegen, moet de totaalprijs correct berekend worden.
+Bijvoorbeeld: als we **2 items** toevoegen, moet de **totaalprijs** **correct** berekend worden.
 
 ~~~cs
 using PRB.ShoppingBasket.Bart;
@@ -2515,7 +2593,7 @@ namespace PRB.ShoppingBasket.Bart.Tests
 }
 ~~~
 
-De berekening is hier:
+De **berekening** is hier:
 
 ~~~text
 Cola:  10 * 3 = 30
@@ -2552,10 +2630,11 @@ namespace PRB.ShoppingBasket.Bart.Tests
 }
 ~~~
 
-Hier controleren we of twee items met dezelfde beschrijving niet allebei in hetzelfde winkelmandje terechtkomen.
+Hier **controleren** we of **2 items** met dezelfde beschrijving niet allebei in **hetzelfde winkelmandje** terechtkomen.
 
 #### Wat als er nog geen items inzitten?
 
+Probeer ook altijd aan de **speciale cases** te denken...  
 Voor onze `Basket`-klasse kunnen we bijvoorbeeld ook nog testen wat de totaalprijs is van een leeg winkelmandje:
 
 ~~~cs
@@ -2565,6 +2644,21 @@ namespace PRB.ShoppingBasket.Bart.Tests
 {
     public class BasketTests
     {
+        [Fact]
+        public void AddNewItem_WithSameDescriptionTwice_ThrowsException()
+        {
+            // Arrange
+            Basket basket = new Basket();
+
+            basket.AddNewItem(new QuantityBasketItem(10, "Cola", 1));
+
+            // Act + Assert
+            Assert.Throws<ItemAlreadyInBasketException>(() =>
+            {
+                basket.AddNewItem(new QuantityBasketItem(20, "Cola", 2));
+            });
+        }
+
         [Fact]
         public void TotalBasketPrice_EmptyBasket_ReturnsZero()
         {
@@ -2591,7 +2685,7 @@ Gebruik hiervoor *"Add tests for Basket"*
 We hebben ondertussen testen toegevoegd voor **Basket** en **QuantityBasketItem**,
 dus je zou min of meer al moeten begrijpen hoe dit werkt en wat je kan testen.  
 
-Zet nu de oefening verder met gelijkaardige testen toe voor **BulkBasketItem**.
+Zet nu de **oefening** **verder** met gelijkaardige testen toe voor **BulkBasketItem**.
 
 #### Testen en committen: "Add tests for BulkBasketItem"
 
@@ -2600,16 +2694,16 @@ Gebruik hiervoor *"Add tests for BulkBasketItem"*
 
 ### Conclusie: Unit testen vs step-by-step
 
-Unit testing betekent dat we kleine onderdelen van onze applicatie automatisch testen.  
-Voor deze oefening testen we vooral de logica in onze klassen getest.
+Unit testing **betekent** dat we **kleine onderdelen** van onze applicatie **automatisch** testen.  
+Voor deze oefening **testen** we **vooral** de **logica** in onze klassen getest.
 
-We testen minder de console-interactie zelf, omdat die afhankelijk is van input van de gebruiker.  
+We testen **minder de console-interactie zelf**, omdat die afhankelijk is van input van de gebruiker.  
 Dit wil niet zeggen dat dit niet dient getest te worden, in zulke gevallen ga je gebruiken van een aantal extra technieken
 zoals mocking, integratietesten, ...
 
-Deze technieken kom later nog aan bod in de opleiding
+> Deze technieken kom later nog aan bod in de opleiding
 
-Door unit tests te combineren met Git krijgen we een veilige werkwijze:
+Door **unit tests** te **combineren** met **Git** krijgen we een **veilige werkwijze**:
 
 * Kleine wijziging maken
 * Automatisch testen

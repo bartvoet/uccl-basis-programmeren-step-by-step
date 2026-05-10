@@ -2381,7 +2381,7 @@ PRB.ShoppingBasket.Bart
 └── PRB.ShoppingBasket.Bart.sln
 ~~~
 
-Je kan `UnitTest1.cs` eventueel hernoemen naar bijvoorbeeld `BasketTests.cs`.
+Je kan de bestaande `UnitTest1.cs` eventueel hernoemen naar bijvoorbeeld `QuantityBasketItemTests.cs`.
 
 Om alle testen uit te voeren gebruik je:
 
@@ -2397,7 +2397,12 @@ Daarmee kan je testen uitvoeren via de interface in plaats van via de terminal.
 #### Testen en committen: "Add testproject"
 
 Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
-Gebruik hiervoor *"Add testproject"*
+
+Afhankelijk van het platform waar je met test krijg je een overzicht van de testen die bestaan:
+
+![test-run](test-run.png)
+
+Gebruik de boodschap *"Add testproject"* voor de commit
 
 ### Eerste unit test voor QuantityBasketItem
 
@@ -2410,7 +2415,7 @@ Hiervoor gaan we een een `QuantityBasketItem` met een bepaalde state testen:
 * hoeveelheid: `3`
 
 Bij deze state verwachten we dat de totale prijs `30` zal zijn.  
-Een test kan er dan als volgt kunnen uitzien:
+We maken een nieuwe cs-file aan in het testproject met de naam `QuantityBasketItemTests.cs`
 
 ~~~cs
 using PRB.ShoppingBasket.Bart;
@@ -2613,6 +2618,22 @@ namespace PRB.ShoppingBasket.Bart.Tests
     public class BasketTests
     {
         [Fact]
+        public void TotalBasketPrice_ReturnsSumOfAllItems()
+        {
+            // Arrange
+            Basket basket = new Basket();
+
+            basket.AddNewItem(new QuantityBasketItem(10, "Cola", 3));
+            basket.AddNewItem(new QuantityBasketItem(5, "Chips", 2));
+
+            // Act
+            int totalPrice = basket.TotalBasketPrice;
+
+            // Assert
+            Assert.Equal(40, totalPrice);
+        }
+
+        [Fact]
         public void AddNewItem_WithSameDescriptionTwice_ThrowsException()
         {
             // Arrange
@@ -2638,39 +2659,52 @@ Probeer ook altijd aan de **speciale cases** te denken...
 Voor onze `Basket`-klasse kunnen we bijvoorbeeld ook nog testen wat de totaalprijs is van een leeg winkelmandje:
 
 ~~~cs
-using PRB.ShoppingBasket.Bart;
+namespace PRB.ShoppingBasket.Bart.Tests;
 
-namespace PRB.ShoppingBasket.Bart.Tests
+public class BasketTests
 {
-    public class BasketTests
+    [Fact]
+    public void TotalBasketPrice_ReturnsSumOfAllItems()
     {
-        [Fact]
-        public void AddNewItem_WithSameDescriptionTwice_ThrowsException()
+        // Arrange
+        Basket basket = new Basket();
+
+        basket.AddNewItem(new QuantityBasketItem(10, "Cola", 3));
+        basket.AddNewItem(new QuantityBasketItem(5, "Chips", 2));
+
+        // Act
+        int totalPrice = basket.TotalBasketPrice;
+
+        // Assert
+        Assert.Equal(40, totalPrice);
+    }
+    
+    [Fact]
+    public void AddNewItem_WithSameDescriptionTwice_ThrowsException()
+    {
+        // Arrange
+        Basket basket = new Basket();
+
+        basket.AddNewItem(new QuantityBasketItem(10, "Cola", 1));
+
+        // Act + Assert
+        Assert.Throws<ItemAlreadyInBasketException>(() =>
         {
-            // Arrange
-            Basket basket = new Basket();
+            basket.AddNewItem(new QuantityBasketItem(20, "Cola", 2));
+        });
+    }
+    
+    [Fact]
+    public void TotalBasketPrice_EmptyBasket_ReturnsZero()
+    {
+        // Arrange
+        Basket basket = new Basket();
 
-            basket.AddNewItem(new QuantityBasketItem(10, "Cola", 1));
+        // Act
+        int totalPrice = basket.TotalBasketPrice;
 
-            // Act + Assert
-            Assert.Throws<ItemAlreadyInBasketException>(() =>
-            {
-                basket.AddNewItem(new QuantityBasketItem(20, "Cola", 2));
-            });
-        }
-
-        [Fact]
-        public void TotalBasketPrice_EmptyBasket_ReturnsZero()
-        {
-            // Arrange
-            Basket basket = new Basket();
-
-            // Act
-            int totalPrice = basket.TotalBasketPrice;
-
-            // Assert
-            Assert.Equal(0, totalPrice);
-        }
+        // Assert
+        Assert.Equal(0, totalPrice);
     }
 }
 ~~~
@@ -3099,6 +3133,8 @@ Voeg daarna een reference toe naar het model-project:
 
 Daarna kan je het MVC-project starten via de run-knop bovenaan in Rider.
 
+![run rider](ride-run-mvc.png)
+
 #### MVC-project aanmaken met VS Code
 
 Navigeer naar de folder waar de solution staat.
@@ -3142,6 +3178,9 @@ http://localhost:5000
 #### Testen en committen: "Adding MVC-components"
 
 Niet vergeten hier even kort te **testen** en een nieuwe **commit** te produceren...  
+
+![first run mvc](first-run-mvc.png)
+
 Zorg er voor dat je zowel:
 
 * De **CMD-app** kan starten
@@ -3184,6 +3223,8 @@ Open `PRB.ShoppingBasket.Bart.Web/Views/Home/Index.cshtml`, voeg toe:
 ~~~
 
 Als je nu de **MVC-applicatie** **start**, zou je op de startpagina deze **totaalprijs** moeten zien.
+
+![alt text](<winkelmandje-test.png>)
 
 Dit is nog geen volledige webapplicatie, maar het bewijst wel dat:
 
@@ -3246,11 +3287,15 @@ Naast het **beveiligen** van **controllers** en **pagina's** laat het ons toe om
 Voor deze oefening gebruiken we **SQLite** als database.  
 Daarin worden de gebruikers, rollen en bijhorende **Identity-gegevens** **opgeslagen**.
 
-De Identity-functionaliteit zal worden toegevoegd aan het **MVC-project** met de nodige uitleg voor Visual Studio, Rider en VS Code
+De **Identity**-functionaliteit zal worden **toegevoegd** aan het **MVC-project** met de nodige **uitleg** voor **Visual Studio, Rider en VS Code**
+
+> Nota:  
+> In tegenstelling tot vorige hoofdstukken make we nu pas bij de laatste stap een commit aan.  
+> Dit heeft als reden dat we hier pas onze test kunnen toepassen bij de laatste stap...
 
 ### Stap 1: Dependencies toevoegen aan het Web-project
 
-Om Identity te gebruiken moeten we eerst een aantal dependencies toevoegen aan het **webproject**
+Om **Identity** te gebruiken moeten we eerst een aantal **dependencies** toevoegen aan het **webproject**
 
 ~~~text
 Microsoft.AspNetCore.Identity.EntityFrameworkCore
@@ -3263,7 +3308,7 @@ Microsoft.VisualStudio.Web.CodeGeneration.Design
 
 #### Dependencies toevoegen met Visual Studio
 
-In **Visual Studio** kan je NuGet-packages toevoegen via de NuGet Package Manager.
+In **Visual Studio** kan je NuGet-packages toevoegen via de **NuGet Package Manager**.
 
 * Klik met de rechtermuisknop op het MVC-project, bijvoorbeeld `PRB.ShoppingBasket.Bart.Web`
 * Kies **Manage NuGet Packages**
@@ -3272,7 +3317,10 @@ In **Visual Studio** kan je NuGet-packages toevoegen via de NuGet Package Manage
 
 #### Dependencies toevoegen met Rider
 
-In **JetBrains Rider** kan je NuGet-packages toevoegen via de NuGet-interface.
+In **JetBrains Rider** kan je NuGet-packages toevoegen via de **NuGet-interface**.
+
+![dependencies Rider](rider-dependencies.png)
+
 
 * Klik met de rechtermuisknop op het MVC-project, bijvoorbeeld `PRB.ShoppingBasket.Bart.Web`
 * Kies **Manage NuGet Packages**
@@ -3280,15 +3328,14 @@ In **JetBrains Rider** kan je NuGet-packages toevoegen via de NuGet-interface.
 
 #### Dependencies toevoegen met VS Code
 
-In **Visual Studio Code** voeg je de packages toe via de terminal.
-
-Navigeer eerst naar het MVC-project:
+In **Visual Studio Code** voeg je de packages toe via de **terminal**.  
+Navigeer 1st naar het MVC-project:
 
 ~~~bash
 cd PRB.ShoppingBasket.Bart.Web
 ~~~
 
-Voeg daarna de packages toe:
+**Voeg** daarna de volgende **packages** toe:
 
 ~~~bash
 dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
@@ -3302,10 +3349,9 @@ dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
 ### Stap 2: ApplicationDbContext toevoegen
 
 We gaan **Identity** gebruiken met **"Individual Accounts"**, dit betekent dat we het beheer gaan doen 
-via de database.  
+via de **database**.  
 
-Het startpunt hiervoor is het aanmaken van een **IdentityDbContext**  
-Voeg daarom de volgende klasse toe aan de Model-folder
+Het startpunt hiervoor is het aanmaken van een **IdentityDbContext**, voeg daarom de volgende klasse - ApplicationDbContext - toe aan de **Model**-folder
 
 ~~~cs
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -3325,7 +3371,8 @@ namespace PRB.ShoppingBasket.Bart.Web.Data
 
 > Nota:  
 > Als je Identity toevoegt bij de start in Visual Studio maakt deze een Data-folder aan.  
-> Voor de éénvoud gaan we hier dit echter in de Model-folder houden.
+> Voor de éénvoud gaan we hier dit echter in de Model-folder houden.  
+> Beiden zijn geldige opties...
 
 ### Stap 4: appsettings.json aanpassen
 
@@ -3463,7 +3510,7 @@ Daarna update je de database:
 
 Na deze stap wordt de SQLite-database basket.db aangemaakt
 
-#### Stap 7: Migrations uitvoeren met VS Code
+#### Migrations uitvoeren met VS Code
 
 In VS Code voer je migrations uit via de terminal.
 
@@ -3502,7 +3549,7 @@ dotnet ef database update
 
 Na deze stap wordt de **SQLite-database basket.db** aangemaakt
 
-### Stap 8: Identity scaffolden
+### Stap 7: Identity scaffolden
 
 #### Identity scaffolden met Visual Studio
 
@@ -3521,14 +3568,14 @@ Selecteer bijvoorbeeld:
 * `Account\Login`
 * `Account\Logout`
 
-Kies bij **Data context class** je bestaande context ApplicationDbContext.  
-Bevestig daarna de scaffolding, Visual Studio voegt dan de nodige bestanden Areas/Identity/Pages/Account toe
+Kies bij **Data context class** je bestaande context **ApplicationDbContext**.  
+**Bevestig** daarna de **scaffolding**, Visual Studio voegt dan de nodige bestanden `Areas/Identity/Pages/Account` toe
 
 > Als Visual Studio vraagt om extra packages te installeren, bevestig dit dan.
 
 #### Identity scaffolden met Rider
 
-In **JetBrains Rider** kan je Identity ook scaffolden via het menu.
+In **JetBrains Rider** kan je **Identity** ook **scaffolden** via het **menu**.
 
 * Klik met de rechtermuisknop op het MVC-project `PRB.ShoppingBasket.Bart.Web`
 * Kies **Add**
@@ -3536,13 +3583,15 @@ In **JetBrains Rider** kan je Identity ook scaffolden via het menu.
 * Kies bij de beschikbare scaffolders **Identity**
 * Klik op **Next** of **Add**
 
-Daarna krijg je een venster waarin je kan aanduiden welke Identity-pagina's je wil toevoegen.
+Daarna krijg je een **venster** waarin je kan aanduiden **welke** Identity-pagina's je wil toevoegen.
 
-Selecteer bijvoorbeeld:
+Selecteer:
 
 * `Account.Register`
 * `Account.Login`
 * `Account.Logout`
+* 
+![scaffolding](identity-rider-scaffolding.png)
 
 Kies daarna bij **Data context class** je bestaande context **ApplicationDbContext** en bevestig daarna de scaffolding.  
 Rider voegt nu de Identity-bestanden toe onder de folder:
@@ -3560,11 +3609,11 @@ Areas
             └── Register.cshtml.cs
 ~~~
 
-Als Rider vraagt om extra packages te herstellen of het project opnieuw te builden, bevestig dit dan.
+> Als Rider vraagt om extra packages te herstellen of het project opnieuw te builden, bevestig dit dan.
 
 #### Identity scaffolden met VS Code
 
-In VS Code scaffold je Identity via de terminal.
+In VS Code **scaffold** je Identity via de **terminal**.
 
 Installeer eerst de code generator indien nodig (dit zou in deze fase van de cursus reeds ok moeten zijn)
 
@@ -3586,21 +3635,21 @@ dotnet aspnet-codegenerator identity \
   --files "Account.Register;Account.Login;Account.Logout"
 ~~~
 
-Op Windows PowerShell of in een terminal waar multiline commands lastig zijn gebruik je het in 1 lijn
+> Op Windows PowerShell of in een terminal waar multiline commands (Windows) lastig zijn gebruik je het in 1 lijn
+> 
+> ~~~powershell
+> dotnet aspnet-codegenerator identity -dc PRB.ShoppingBasket.Bart.Web.Data.ApplicationDbContext --files "Account.Register;Account.Login;Account.Logout"
+> ~~~
 
-~~~powershell
-dotnet aspnet-codegenerator identity -dc PRB.ShoppingBasket.Bart.Web.Data.ApplicationDbContext --files "Account.Register;Account.Login;Account.Logout"
-~~~
+### Stap 8: Login partial toevoegen
 
-### Stap 9: Login partial toevoegen
-
-Open "Views/Shared/_Layout.cshtml", zoek de navigatiebalk en voeg daar toe:
+Open `Views/Shared/_Layout.cshtml`, zoek de navigatiebalk en voeg daar toe:
 
 ~~~html
 <partial name="_LoginPartial" />
 ~~~
 
-Bijvoorbeeld:
+Dit zou er ongeveer zo moeten uitzien:
 
 ~~~html
 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
@@ -3650,14 +3699,20 @@ else
 
 ### Stap 9: Applicatie starten en testen
 
-Start de applicate, controleer daarna in de browser of je links ziet voor:
+**Start** de applicate, controleer daarna in de browser of je **links** ziet voor:
 
 * Register
 * Login
 * Logout
 
-Maak nu een user aan en zorg dat je in en uitlogt...
+Om te **testen**, maak nu een **user** log in en uit...
 
-### Committen met "Adding Identity to the Web-project"
+### Finale stap: Committen met "Adding Identity to the Web-project"
 
-Als de laatste stap goed werkt commit je wijzigingen met de boodschap "Adding Identity to the Web-project" 
+Zoals eerder vermeld, we hebben hier **niet** voor **elke stap** een **commit** toegevoegd omdat het in principe 1 grote "setup"-actie was.  
+Als de laatste stap dus goed werkt commit je wijzigingen met de boodschap *"Adding Identity to the Web-project"*.
+
+### Conclusie Identity
+
+We hebben nu enkel Identity geinstalleerd en geactiveerd.  
+In de komende hoofdstuk(jes) zullen we hier ook **authorisatie** op toepassen.

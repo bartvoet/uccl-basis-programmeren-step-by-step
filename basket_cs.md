@@ -4447,7 +4447,7 @@ We hebben:
 
 Onze applicatie bewaart nu niet enkel gebruikers via Identity, maar ook winkelmandjes en hun verschillende soorten items.
 
-## BasketService en BasketRepository 
+## BasketService en BasketRepository (deel 10)
 
 In dit hoofdstuk voegen we een **service** en een **repository** toe voor onze winkelmandlogica.  
 We gaan hier ook meer gebruik maken van Dependency Injection...
@@ -5073,3 +5073,680 @@ We hebben:
 * Views gemaakt voor overzicht en details
 
 Hierdoor is de controller minder afhankelijk van Entity Framework en is de code beter gestructureerd.
+
+## ViewModel gebruiken om BasketItems toe te voegen (deel 11)
+
+In dit hoofdstuk voegen we een formulier toe waarmee een gebruiker items aan een bestaande basket kan toevoegen.
+
+We willen twee soorten items kunnen toevoegen:
+
+* `QuantityBasketItem`
+* `BulkBasketItem`
+
+Daarvoor gebruiken we een **ViewModel**.
+
+Tot nu toe gebruikten we in onze views vooral rechtstreeks onze domeinklassen, zoals `Basket`, `BasketItem`, `QuantityBasketItem` en `BulkBasketItem`
+
+Voor eenvoudige weergave kan dat werken.  
+Maar voor formulieren is het vaak beter om een aparte klasse te maken die precies beschrijft welke gegevens de view nodig heeft.
+
+Zo'n klasse noemen we een **ViewModel**.
+
+### Waarom een ViewModel?
+
+Een domeinklasse beschrijft de logica van de applicatie.
+
+Bijvoorbeeld `QuantityBasketItem` bevat properties zoals:
+
+* `Description`
+* `Price`
+* `Quantity`
+* `TotalPrice`
+
+Maar een **formulier** om een item toe te voegen heeft soms andere gegevens nodig.
+
+Bijvoorbeeld:
+
+* Welke basket wordt aangepast?
+* Welk type item wil de gebruiker toevoegen?
+* Gaat het om een gewoon item of bulk item?
+* Welke velden moeten ingevuld worden?
+
+Daarom maken we een aparte klasse `AddBasketItemViewModel`, specifiek bedoeld voor het formulier.
+
+### Stap 1: ViewModels-folder maken
+
+Maak in het MVC-project een nieuwe folder `ViewModels` aan, de structuur wordt dan bijvoorbeeld:
+
+~~~text
+PRB.ShoppingBasket.Bart.Web
+│
+├── Controllers
+├── Repositories
+├── Services
+├── ViewModels
+│   └── AddBasketItemViewModel.cs
+├── Views
+└── Program.cs
+~~~
+
+### Stap 2: AddBasketItemViewModel maken
+
+Maak in de folder `ViewModels` een nieuw bestand aan `AddBasketItemViewModel.cs` met als inhoud:
+
+~~~cs
+using System.ComponentModel.DataAnnotations;
+
+namespace PRB.ShoppingBasket.Bart.Web.ViewModels
+{
+    public class AddBasketItemViewModel
+    {
+        public int BasketId { get; set; }
+
+        [Required]
+        public string ItemType { get; set; } = "Quantity";
+
+        [Required]
+        public string Description { get; set; } = string.Empty;
+
+        public int Price { get; set; }
+
+        public int Quantity { get; set; } = 1;
+
+        public int PricePerKilo { get; set; }
+
+        public int WeightInGrams { get; set; } = 1000;
+    }
+}
+~~~
+
+Deze ViewModel bevat velden voor beide soorten items.
+
+Voor een `QuantityBasketItem` gebruiken we:
+
+* `Description`
+* `Price`
+* `Quantity`
+
+Voor een `BulkBasketItem` gebruiken we:
+
+* `Description`
+* `PricePerKilo`
+* `WeightInGrams`
+
+De property `ItemType` bepaalt welk type item we willen aanmaken.
+
+Mogelijke waarden zijn bijvoorbeeld:
+
+~~~text
+Quantity
+Bulk
+~~~
+
+### Stap 3: BasketService uitbreiden
+
+We voegen nu functies toe aan onze service om items toe te voegen aan een bestaande basket.
+
+Open `Services/IBasketService.cs` en breid de interface uit:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Web.Services
+{
+    public interface IBasketService
+    {
+        List<Basket> GetAllBaskets();
+
+        Basket? GetBasketById(int id);
+
+        Basket CreateTestBasket();
+
+        bool AddQuantityItem(int basketId, string description, int price, int quantity);
+
+        bool AddBulkItem(int basketId, string description, int pricePerKilo, int weightInGrams);
+    }
+}
+~~~
+
+De nieuwe methodes geven een `bool` terug.
+
+* `true` betekent dat het item is toegevoegd
+* `false` betekent dat de basket niet gevonden werd
+
+### Stap 4: BasketService implementeren
+
+Open `Services/BasketService.cs` en voeg de nieuwe methodes toe:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Repositories;
+
+namespace PRB.ShoppingBasket.Bart.Web.Services
+{
+    public class BasketService : IBasketService
+    {
+        private readonly IBasketRepository _basketRepository;
+
+        public BasketService(IBasketRepository basketRepository)
+        {
+            _basketRepository = basketRepository;
+        }
+
+        public List<Basket> GetAllBaskets()
+        {
+            return _basketRepository.GetAll();
+        }
+
+        public Basket? GetBasketById(int id)
+        {
+            return _basketRepository.GetById(id);
+        }
+
+        public Basket CreateTestBasket()
+        {
+            Basket basket = new Basket();
+
+            basket.AddNewItem(new QuantityBasketItem(10, "Cola", 3));
+            basket.AddNewItem(new BulkBasketItem(4, "Bloem", 1500));
+
+            _basketRepository.Add(basket);
+            _basketRepository.SaveChanges();
+
+            return basket;
+        }
+
+        public bool AddQuantityItem(int basketId, string description, int price, int quantity)
+        {
+            Basket? basket = _basketRepository.GetById(basketId);
+
+            if (basket == null)
+            {
+                return false;
+            }
+
+            basket.AddNewItem(new QuantityBasketItem(price, description, quantity));
+
+            _basketRepository.SaveChanges();
+
+            return true;
+        }
+
+        public bool AddBulkItem(int basketId, string description, int pricePerKilo, int weightInGrams)
+        {
+            Basket? basket = _basketRepository.GetById(basketId);
+
+            if (basket == null)
+            {
+                return false;
+            }
+
+            basket.AddNewItem(new BulkBasketItem(pricePerKilo, description, weightInGrams));
+
+            _basketRepository.SaveChanges();
+
+            return true;
+        }
+    }
+}
+~~~
+
+De service haalt eerst de basket op via de repository, daarna wordt het juiste type item toegevoegd:
+
+~~~cs
+new QuantityBasketItem(...)
+~~~
+
+of:
+
+~~~cs
+new BulkBasketItem(...)
+~~~
+
+Daarna worden de wijzigingen opgeslagen met:
+
+~~~cs
+_basketRepository.SaveChanges();
+~~~
+
+### Stap 5: BasketController uitbreiden
+
+Open `BasketController.cs` en voeg bovenaan de ViewModel-namespace toe:
+
+~~~cs
+using PRB.ShoppingBasket.Bart.Web.ViewModels;
+~~~
+
+We voegen nu twee acties toe:
+
+* Een `GET`-actie om het formulier te tonen
+* Een `POST`-actie om het formulier te verwerken
+
+~~~cs
+[HttpGet]
+public IActionResult AddItem(int basketId)
+{
+    AddBasketItemViewModel model = new AddBasketItemViewModel
+    {
+        BasketId = basketId
+    };
+
+    return View(model);
+}
+
+[HttpPost]
+public IActionResult AddItem(AddBasketItemViewModel model)
+{
+    if (!ModelState.IsValid)
+    {
+        return View(model);
+    }
+
+    try
+    {
+        bool basketFound;
+
+        if (model.ItemType == "Quantity")
+        {
+            basketFound = _basketService.AddQuantityItem(
+                model.BasketId,
+                model.Description,
+                model.Price,
+                model.Quantity);
+        }
+        else if (model.ItemType == "Bulk")
+        {
+            basketFound = _basketService.AddBulkItem(
+                model.BasketId,
+                model.Description,
+                model.PricePerKilo,
+                model.WeightInGrams);
+        }
+        else
+        {
+            ModelState.AddModelError("", "Onbekend itemtype");
+            return View(model);
+        }
+
+        if (!basketFound)
+        {
+            return NotFound();
+        }
+
+        return RedirectToAction("Details", new { id = model.BasketId });
+    }
+    catch (NoNegativeAmountAllowedException e)
+    {
+        ModelState.AddModelError("", $"Geen negatief getal toegelaten voor {e.Element}");
+        return View(model);
+    }
+    catch (ItemAlreadyInBasketException e)
+    {
+        ModelState.AddModelError("", $"Het item met beschrijving {e.Description} bestaat reeds");
+        return View(model);
+    }
+}
+~~~
+
+De controller beslist op basis van `ItemType` welke service-methode wordt aangeroepen.
+
+### Stap 6: Vollediger voorbeeld van BasketController
+
+De controller zou er nu ongeveer zo uitzien:
+
+~~~cs
+using Microsoft.AspNetCore.Mvc;
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Services;
+using PRB.ShoppingBasket.Bart.Web.ViewModels;
+
+namespace PRB.ShoppingBasket.Bart.Web.Controllers
+{
+    public class BasketController : Controller
+    {
+        private readonly IBasketService _basketService;
+
+        public BasketController(IBasketService basketService)
+        {
+            _basketService = basketService;
+        }
+
+        public IActionResult Index()
+        {
+            List<Basket> baskets = _basketService.GetAllBaskets();
+
+            return View(baskets);
+        }
+
+        public IActionResult Details(int id)
+        {
+            Basket? basket = _basketService.GetBasketById(id);
+
+            if (basket == null)
+            {
+                return NotFound();
+            }
+
+            return View(basket);
+        }
+
+        public IActionResult CreateTestBasket()
+        {
+            Basket basket = _basketService.CreateTestBasket();
+
+            return RedirectToAction("Details", new { id = basket.Id });
+        }
+
+        [HttpGet]
+        public IActionResult AddItem(int basketId)
+        {
+            AddBasketItemViewModel model = new AddBasketItemViewModel
+            {
+                BasketId = basketId
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public IActionResult AddItem(AddBasketItemViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                bool basketFound;
+
+                if (model.ItemType == "Quantity")
+                {
+                    basketFound = _basketService.AddQuantityItem(
+                        model.BasketId,
+                        model.Description,
+                        model.Price,
+                        model.Quantity);
+                }
+                else if (model.ItemType == "Bulk")
+                {
+                    basketFound = _basketService.AddBulkItem(
+                        model.BasketId,
+                        model.Description,
+                        model.PricePerKilo,
+                        model.WeightInGrams);
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Onbekend itemtype");
+                    return View(model);
+                }
+
+                if (!basketFound)
+                {
+                    return NotFound();
+                }
+
+                return RedirectToAction("Details", new { id = model.BasketId });
+            }
+            catch (NoNegativeAmountAllowedException e)
+            {
+                ModelState.AddModelError("", $"Geen negatief getal toegelaten voor {e.Element}");
+                return View(model);
+            }
+            catch (ItemAlreadyInBasketException e)
+            {
+                ModelState.AddModelError("", $"Het item met beschrijving {e.Description} bestaat reeds");
+                return View(model);
+            }
+        }
+    }
+}
+~~~
+
+### Stap 7: AddItem-view maken
+
+Maak in de folder `Views/Basket` een nieuwe view aan met de naam 
+`AddItem.cshtml` (of maak deze aan via de IDE) met als inhoud:
+
+~~~html
+@model PRB.ShoppingBasket.Bart.Web.ViewModels.AddBasketItemViewModel
+
+<h1>Item toevoegen</h1>
+
+<form asp-controller="Basket" asp-action="AddItem" method="post">
+    <input type="hidden" asp-for="BasketId" />
+
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="ItemType" class="form-label">Type item</label>
+        <select asp-for="ItemType" class="form-control">
+            <option value="Quantity">Gewoon item</option>
+            <option value="Bulk">Bulk item</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Omschrijving</label>
+        <input asp-for="Description" class="form-control" />
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <h2>Gewoon item</h2>
+
+    <div class="mb-3">
+        <label asp-for="Price" class="form-label">Prijs per item</label>
+        <input asp-for="Price" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Quantity" class="form-label">Hoeveelheid</label>
+        <input asp-for="Quantity" class="form-control" />
+    </div>
+
+    <h2>Bulk item</h2>
+
+    <div class="mb-3">
+        <label asp-for="PricePerKilo" class="form-label">Prijs per kilo</label>
+        <input asp-for="PricePerKilo" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="WeightInGrams" class="form-label">Gewicht in gram</label>
+        <input asp-for="WeightInGrams" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Toevoegen</button>
+
+    <a asp-controller="Basket" asp-action="Details" asp-route-id="@Model.BasketId" class="btn btn-secondary">
+        Annuleren
+    </a>
+</form>
+~~~
+
+Deze view toont voorlopig alle invoervelden, de gebruiker kiest bovenaan of het gaat om:
+
+* Een gewoon item
+* Een bulk item
+
+Afhankelijk van die keuze gebruikt de controller de juiste velden.
+
+### Stap 8: Link toevoegen aan de Details-view
+
+Open `Views/Basket/Details.cshtml` en voeg een link toe om een item toe te voegen:
+
+~~~html
+<p>
+    <a asp-controller="Basket" asp-action="AddItem" asp-route-basketId="@Model.Id">
+        Item toevoegen
+    </a>
+</p>
+~~~
+
+Een volledige versie ziet er ongeveer zo uit:
+
+~~~html
+@using PRB.ShoppingBasket.Bart
+@model Basket
+
+<h1>Basket @Model.Id</h1>
+
+<p>Totaalprijs: @Model.TotalBasketPrice</p>
+
+<p>
+    <a asp-controller="Basket" asp-action="AddItem" asp-route-basketId="@Model.Id">
+        Item toevoegen
+    </a>
+</p>
+
+<h2>Items</h2>
+
+@if (!Model.Items.Any())
+{
+    <p>Deze basket bevat nog geen items.</p>
+}
+else
+{
+    <ul>
+        @foreach (BasketItem item in Model.Items)
+        {
+            <li>@item</li>
+        }
+    </ul>
+}
+
+<p>
+    <a asp-controller="Basket" asp-action="Index">Terug naar overzicht</a>
+</p>
+~~~
+
+### Stap 9: Testen
+
+#### QuantityBasketItem
+
+Start de applicatie en navigeer naar `/Basket` (maak eventueel eerst een testbasket aan), ga daarna naar de detailpagina van een basket en klik op `Item toevoegen` en vul in:
+
+~~~text
+Type item: Gewoon item
+Omschrijving: Chips
+Prijs per item: 5
+Hoeveelheid: 2
+~~~
+
+Na het verzenden keer je terug naar de detailpagina.  
+Je zou nu het nieuwe item moeten zien:
+
+~~~text
+2 maal Chips voor 5 per item, totaal 10
+~~~
+
+#### BulkBasketItem
+
+Voeg daarna een bulk item toe.
+
+Bijvoorbeeld:
+
+~~~text
+Type item: Bulk item
+Omschrijving: Rijst
+Prijs per kilo: 4
+Gewicht in gram: 1500
+~~~
+
+Na het verzenden zou je bijvoorbeeld moeten zien:
+
+~~~text
+1500 gram Rijst voor 4 per kilo, totaal 6
+~~~
+
+#### Foutafhandeling testen
+
+Test ook foutieve situaties.
+
+Bijvoorbeeld een negatieve prijs:
+
+~~~text
+Prijs per item: -5
+~~~
+
+Dan zou je een foutmelding moeten krijgen:
+
+~~~text
+Geen negatief getal toegelaten voor prijs
+~~~
+
+Test ook een dubbele omschrijving.
+
+Bijvoorbeeld als `Chips` al bestaat in de basket en je voegt opnieuw `Chips` toe, dan zou je een foutmelding moeten krijgen:
+
+~~~text
+Het item met beschrijving Chips bestaat reeds
+~~~
+
+### Duiding: Waarom is dit beter dan rechtstreeks BasketItem gebruiken?
+
+We hadden kunnen proberen om rechtstreeks `QuantityBasketItem` of `BulkBasketItem` als model in de view te gebruiken.
+
+Maar dat zou onhandig zijn, omdat het formulier eerst moet weten welk type item de gebruiker wil maken.
+
+De ViewModel bevat precies de gegevens die het formulier nodig heeft:
+
+~~~cs
+public class AddBasketItemViewModel
+{
+    public int BasketId { get; set; }
+
+    public string ItemType { get; set; } = "Quantity";
+
+    public string Description { get; set; } = string.Empty;
+
+    public int Price { get; set; }
+
+    public int Quantity { get; set; } = 1;
+
+    public int PricePerKilo { get; set; }
+
+    public int WeightInGrams { get; set; } = 1000;
+}
+~~~
+
+De **ViewModel** is dus **geen domeinmodel**.  
+Het is een model specifiek voor de view.
+
+### Duiding: Verantwoordelijkheden
+
+Na deze stap hebben we de verantwoordelijkheden als volgt verdeeld:
+
+* De view werkt met een ViewModel.
+* De controller ontvangt de ingevulde ViewModel.
+* De controller beslist welk type item wordt toegevoegd.
+* De service voert de applicatielogica uit.
+* De repository bewaart de gegevens.
+
+### Finale stap: Commit maken 'Add ViewModel for creation'
+
+Maak na deze stap een commit met *'Add ViewModel for creation'*
+
+### ViewModel Samengevat
+
+In dit hoofdstuk hebben we een ViewModel toegevoegd om items aan een basket toe te voegen.
+
+We hebben:
+
+* Een `ViewModels`-folder gemaakt
+* Een `AddBasketItemViewModel` gemaakt
+* De `IBasketService` uitgebreid
+* De `BasketService` uitgebreid
+* Een `AddItem`-actie toegevoegd aan `BasketController`
+* Een `AddItem.cshtml`-view gemaakt
+* Een link toegevoegd vanuit de detailpagina
+* Zowel `QuantityBasketItem` als `BulkBasketItem` kunnen toevoegen
+
+Hierdoor gebruiken we nu een duidelijker MVC-patroon:
+
+* De view gebruikt een ViewModel
+* De controller verwerkt de input
+* De service bevat de logica
+* De repository bewaart de gegevens
+

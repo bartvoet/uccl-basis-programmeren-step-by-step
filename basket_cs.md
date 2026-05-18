@@ -5750,3 +5750,569 @@ Hierdoor gebruiken we nu een duidelijker MVC-patroon:
 * De service bevat de logica
 * De repository bewaart de gegevens
 
+## Basket koppelen aan de ingelogde gebruiker (deel 12)
+
+In dit hoofdstuk koppelen we een `Basket` aan de gebruiker die is ingelogd via **ASP.NET Core Identity**.
+
+Tot nu toe zijn onze baskets algemeen.  
+Iedereen ziet dezelfde lijst met baskets.
+
+Dat is niet ideaal.
+
+In een echte applicatie wil je meestal dat:
+
+* Elke gebruiker zijn eigen winkelmandjes heeft
+* Een gebruiker enkel zijn eigen baskets ziet
+* Nieuwe baskets automatisch gekoppeld worden aan de ingelogde gebruiker
+
+We gebruiken hiervoor de `UserId` van ASP.NET Core Identity.
+
+### Situatie
+
+We hebben ondertussen:
+
+* Identity toegevoegd
+* Baskets opgeslagen met Entity Framework
+* Een repository toegevoegd
+* Een service toegevoegd
+* Een ViewModel gebruikt om items toe te voegen
+
+Nu gaan we de baskets koppelen aan de ingelogde gebruiker.
+
+### Stap 1: Basket uitbreiden met UserId
+
+Open de klasse `Basket.cs` en voeg een property toe:
+
+~~~cs
+public string UserId { get; private set; } = string.Empty;
+~~~
+
+We voorzien ook een methode om de basket aan een gebruiker te koppelen:
+
+~~~cs
+public void AssignToUser(string userId)
+{
+    UserId = userId;
+}
+~~~
+
+De klasse `Basket` ziet er dan bijvoorbeeld zo uit:
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class Basket
+    {
+        public int Id { get; private set; }
+
+        public string UserId { get; private set; } = string.Empty;
+
+        public List<BasketItem> Items { get; private set; } = new List<BasketItem>();
+
+        public void AssignToUser(string userId)
+        {
+            UserId = userId;
+        }
+
+        public void AddNewItem(BasketItem item)
+        {
+            if (ItemProvidedInBasket(item))
+            {
+                throw new ItemAlreadyInBasketException(item.Description);
+            }
+
+            Items.Add(item);
+        }
+
+        public bool ItemProvidedInBasket(BasketItem item)
+        {
+            return Lookup(item.Description) != null;
+        }
+
+        public BasketItem? Lookup(string description)
+        {
+            foreach (BasketItem item in Items)
+            {
+                if (item.Description.Equals(description))
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
+        public int TotalBasketPrice
+        {
+            get
+            {
+                int totalPrice = 0;
+
+                foreach (BasketItem item in Items)
+                {
+                    totalPrice += item.TotalPrice;
+                }
+
+                return totalPrice;
+            }
+        }
+    }
+}
+~~~
+
+We gebruiken hier een `string`, omdat de standaard `IdentityUser.Id` ook een `string` is.
+
+### Stap 2: Repository aanpassen
+
+Momenteel haalt de repository alle baskets op:
+
+~~~cs
+public List<Basket> GetAll()
+{
+    return _context.Baskets
+        .Include(basket => basket.Items)
+        .ToList();
+}
+~~~
+
+We willen nu enkel baskets ophalen van één gebruiker.  
+Open `IBasketRepository.cs` en pas de interface aan:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Web.Repositories
+{
+    public interface IBasketRepository
+    {
+        List<Basket> GetAllForUser(string userId);
+
+        Basket? GetByIdForUser(int id, string userId);
+
+        void Add(Basket basket);
+
+        void SaveChanges();
+    }
+}
+~~~
+
+Open daarna `BasketRepository.cs` en pas de implementatie aan:
+
+~~~cs
+using Microsoft.EntityFrameworkCore;
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Data;
+
+namespace PRB.ShoppingBasket.Bart.Web.Repositories
+{
+    public class BasketRepository : IBasketRepository
+    {
+        private readonly ApplicationDbContext _context;
+
+        public BasketRepository(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public List<Basket> GetAllForUser(string userId)
+        {
+            return _context.Baskets
+                .Include(basket => basket.Items)
+                .Where(basket => basket.UserId == userId)
+                .ToList();
+        }
+
+        public Basket? GetByIdForUser(int id, string userId)
+        {
+            return _context.Baskets
+                .Include(basket => basket.Items)
+                .FirstOrDefault(basket => basket.Id == id && basket.UserId == userId);
+        }
+
+        public void Add(Basket basket)
+        {
+            _context.Baskets.Add(basket);
+        }
+
+        public void SaveChanges()
+        {
+            _context.SaveChanges();
+        }
+    }
+}
+~~~
+
+Belangrijk is deze filter:
+
+~~~cs
+.Where(basket => basket.UserId == userId)
+~~~
+
+en:
+
+~~~cs
+basket.Id == id && basket.UserId == userId
+~~~
+
+Zo vermijden we dat een gebruiker de basket van een andere gebruiker kan ophalen door gewoon het id in de URL te wijzigen.
+
+### Stap 3: Service aanpassen
+
+De service moet nu weten voor welke gebruiker gewerkt wordt.
+
+Open `Services/IBasketService.cs` en pas de interface aan:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Web.Services
+{
+    public interface IBasketService
+    {
+        List<Basket> GetAllBasketsForUser(string userId);
+
+        Basket? GetBasketByIdForUser(int id, string userId);
+
+        Basket CreateTestBasketForUser(string userId);
+
+        bool AddQuantityItemForUser(int basketId, string userId, string description, int price, int quantity);
+
+        bool AddBulkItemForUser(int basketId, string userId, string description, int pricePerKilo, int weightInGrams);
+    }
+}
+~~~
+
+Open daarna `Services/BasketService.cs` en pas de implementatie aan:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Repositories;
+
+namespace PRB.ShoppingBasket.Bart.Web.Services
+{
+    public class BasketService : IBasketService
+    {
+        private readonly IBasketRepository _basketRepository;
+
+        public BasketService(IBasketRepository basketRepository)
+        {
+            _basketRepository = basketRepository;
+        }
+
+        public List<Basket> GetAllBasketsForUser(string userId)
+        {
+            return _basketRepository.GetAllForUser(userId);
+        }
+
+        public Basket? GetBasketByIdForUser(int id, string userId)
+        {
+            return _basketRepository.GetByIdForUser(id, userId);
+        }
+
+        public Basket CreateTestBasketForUser(string userId)
+        {
+            Basket basket = new Basket();
+            basket.AssignToUser(userId);
+
+            basket.AddNewItem(new QuantityBasketItem(10, "Cola", 3));
+            basket.AddNewItem(new BulkBasketItem(4, "Bloem", 1500));
+
+            _basketRepository.Add(basket);
+            _basketRepository.SaveChanges();
+
+            return basket;
+        }
+
+        public bool AddQuantityItemForUser(int basketId, string userId, string description, int price, int quantity)
+        {
+            Basket? basket = _basketRepository.GetByIdForUser(basketId, userId);
+
+            if (basket == null)
+            {
+                return false;
+            }
+
+            basket.AddNewItem(new QuantityBasketItem(price, description, quantity));
+
+            _basketRepository.SaveChanges();
+
+            return true;
+        }
+
+        public bool AddBulkItemForUser(int basketId, string userId, string description, int pricePerKilo, int weightInGrams)
+        {
+            Basket? basket = _basketRepository.GetByIdForUser(basketId, userId);
+
+            if (basket == null)
+            {
+                return false;
+            }
+
+            basket.AddNewItem(new BulkBasketItem(pricePerKilo, description, weightInGrams));
+
+            _basketRepository.SaveChanges();
+
+            return true;
+        }
+    }
+}
+~~~
+
+De service zorgt er nu voor dat een nieuwe basket wordt gekoppeld aan de juiste gebruiker:
+
+~~~cs
+basket.AssignToUser(userId);
+~~~
+
+### Stap 4: Controller beveiligen met Authorize
+
+Omdat baskets nu per gebruiker zijn, moet de gebruiker ingelogd zijn, open `Controllers/BasketController.cs` en voeg bovenaan toe:
+
+~~~cs
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+~~~
+
+Plaats daarna `[Authorize]` boven de controller:
+
+~~~cs
+[Authorize]
+public class BasketController : Controller
+{
+    // ...
+}
+~~~
+
+Hierdoor zijn alle acties in de controller enkel toegankelijk voor ingelogde gebruikers.
+
+### Stap 5: UserId ophalen in de controller
+
+In een controller kunnen we de id van de ingelogde gebruiker ophalen met:
+
+~~~cs
+User.FindFirstValue(ClaimTypes.NameIdentifier)
+~~~
+
+We maken hiervoor een kleine helper-methode in de controller:
+
+~~~cs
+private string GetCurrentUserId()
+{
+    return User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? throw new InvalidOperationException("Geen ingelogde gebruiker gevonden.");
+}
+~~~
+
+De controller kan dan telkens de huidige gebruiker opvragen.
+
+### Stap 6: BasketController aanpassen
+
+De volledige controller kan er nu zo uitzien:
+
+~~~cs
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Services;
+using PRB.ShoppingBasket.Bart.Web.ViewModels;
+using System.Security.Claims;
+
+namespace PRB.ShoppingBasket.Bart.Web.Controllers
+{
+    [Authorize]
+    public class BasketController : Controller
+    {
+        private readonly IBasketService _basketService;
+
+        public BasketController(IBasketService basketService)
+        {
+            _basketService = basketService;
+        }
+
+        public IActionResult Index()
+        {
+            string userId = GetCurrentUserId();
+
+            List<Basket> baskets = _basketService.GetAllBasketsForUser(userId);
+
+            return View(baskets);
+        }
+
+        public IActionResult Details(int id)
+        {
+            string userId = GetCurrentUserId();
+
+            Basket? basket = _basketService.GetBasketByIdForUser(id, userId);
+
+            if (basket == null)
+            {
+                return NotFound();
+            }
+
+            return View(basket);
+        }
+
+        public IActionResult CreateTestBasket()
+        {
+            string userId = GetCurrentUserId();
+
+            Basket basket = _basketService.CreateTestBasketForUser(userId);
+
+            return RedirectToAction("Details", new { id = basket.Id });
+        }
+
+        [HttpGet]
+        public IActionResult AddItem(int basketId)
+        {
+            string userId = GetCurrentUserId();
+
+            Basket? basket = _basketService.GetBasketByIdForUser(basketId, userId);
+
+            if (basket == null)
+            {
+                return NotFound();
+            }
+
+            AddBasketItemViewModel model = new AddBasketItemViewModel
+            {
+                BasketId = basketId
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public IActionResult AddItem(AddBasketItemViewModel model)
+        {
+            string userId = GetCurrentUserId();
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                bool basketFound;
+
+                if (model.ItemType == "Quantity")
+                {
+                    basketFound = _basketService.AddQuantityItemForUser(
+                        model.BasketId,
+                        userId,
+                        model.Description,
+                        model.Price,
+                        model.Quantity);
+                }
+                else if (model.ItemType == "Bulk")
+                {
+                    basketFound = _basketService.AddBulkItemForUser(
+                        model.BasketId,
+                        userId,
+                        model.Description,
+                        model.PricePerKilo,
+                        model.WeightInGrams);
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Onbekend itemtype");
+                    return View(model);
+                }
+
+                if (!basketFound)
+                {
+                    return NotFound();
+                }
+
+                return RedirectToAction("Details", new { id = model.BasketId });
+            }
+            catch (NoNegativeAmountAllowedException e)
+            {
+                ModelState.AddModelError("", $"Geen negatief getal toegelaten voor {e.Element}");
+                return View(model);
+            }
+            catch (ItemAlreadyInBasketException e)
+            {
+                ModelState.AddModelError("", $"Het item met beschrijving {e.Description} bestaat reeds");
+                return View(model);
+            }
+        }
+
+        private string GetCurrentUserId()
+        {
+            return User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? throw new InvalidOperationException("Geen ingelogde gebruiker gevonden.");
+        }
+    }
+}
+~~~
+
+### Stap 7: Migration maken
+
+Omdat we een nieuwe property `UserId` aan `Basket` hebben toegevoegd, moet de database aangepast worden.
+
+Maak een nieuwe migration (via de IDE of via command line zoals hieronder):
+
+~~~bash
+dotnet ef migrations add AddUserIdToBasket
+~~~
+
+Voer daarna de migration uit:
+
+~~~bash
+dotnet ef database update
+~~~
+
+Hierdoor krijgt de tabel `Baskets` een extra kolom `UserId`
+
+### Stap 8: Testen
+
+Start de applicatie.
+
+Test daarna het volgende scenario:
+
+* Registreer een gebruiker
+* Log in met deze gebruiker
+* Ga naar `/Basket`
+* Maak een testbasket aan
+* Voeg items toe
+* Log uit
+* Registreer of log in met een tweede gebruiker
+* Ga opnieuw naar `/Basket`
+
+De tweede gebruiker zou de baskets van de eerste gebruiker niet mogen zien.
+
+### Stap 9: Waarom is dit veiliger?
+
+Zonder filter op `UserId` zou een gebruiker eventueel een URL kunnen proberen zoals `/Basket/Details/5`
+
+Als basket 5 van iemand anders is, zou die basket dan toch zichtbaar kunnen zijn.
+
+Daarom filteren we in de repository altijd op twee voorwaarden:
+
+~~~cs
+basket.Id == id && basket.UserId == userId
+~~~
+
+Zo moet zowel het basket-id als het user-id overeenkomen.
+
+### Finale stap: Commit maken "Link baskets to authenticated users"
+
+Maak na deze stap een commit met *"Link baskets to authenticated users"*
+
+### Multi-user Samengevat
+
+In dit hoofdstuk hebben we baskets gekoppeld aan de ingelogde gebruiker.
+
+We hebben:
+
+* `UserId` toegevoegd aan `Basket`
+* Een methode `AssignToUser` toegevoegd
+* De repository aangepast om per gebruiker te filteren
+* De service aangepast om de user-id door te geven
+* De controller beveiligd met `[Authorize]`
+* De huidige gebruiker opgehaald via `ClaimTypes.NameIdentifier`
+* Een migration gemaakt
+* Getest met meerdere gebruikers
+
+Vanaf nu ziet elke gebruiker enkel zijn eigen baskets.

@@ -2973,7 +2973,10 @@ namespace PRB.ShoppingBasket.Bart
 {
     public class Program
     {
-        
+        static void Main(string[] args)
+        {
+            
+        }
     }
 }
 ~~~
@@ -3716,3 +3719,730 @@ Als de laatste stap dus goed werkt commit je wijzigingen met de boodschap *"Addi
 
 We hebben nu enkel Identity geinstalleerd en geactiveerd.  
 In de komende hoofdstuk(jes) zullen we hier ook **authorisatie** op toepassen.
+
+## Entity Framework toevoegen voor Basket en BasketItems (deel 9)
+
+In dit hoofdstuk gaan we onze winkelmandjes bewaren in de database met **Entity Framework Core**.
+
+Tot nu toe bestaan onze `Basket` en `BasketItem`-objecten enkel in het geheugen van de applicatie.  
+Zodra de applicatie stopt, zijn de gegevens weg.
+
+Met Entity Framework willen we ervoor zorgen dat we gegevens kunnen bewaren zoals:
+
+* Een `Basket`
+* De items in een basket
+* Een `QuantityBasketItem`
+* Een `BulkBasketItem`
+* De totaalprijs van een basket
+
+We gebruiken hiervoor dezelfde SQLite-database als in het vorige hoofdstuk met Identity.
+
+### Huidige modules
+
+Onze solution bevat ondertussen meerdere projecten waar het het project `PRB.ShoppingBasket.Bart`de modelklassen bevat zoals
+
+* `Basket`
+* `BasketItem`
+* `QuantityBasketItem`
+* `BulkBasketItem`
+
+en het project `PRB.ShoppingBasket.Bart.Web` bevat de MVC-applicatie, Identity en `ApplicationDbContext`.
+
+We gaan de winkelmandlogica dus niet naar het webproject verplaatsen.  
+We gebruiken hiervoor het model-project als basis, maar maken de modelklassen geschikt om door EF Core bewaard te worden.
+
+### Belangrijk: interfaces en Entity Framework
+
+Op het einde van het vorige deel hebben we mogelijk gewerkt met een interface `IBasketItem`.
+
+Bijvoorbeeld:
+
+~~~cs
+public List<IBasketItem> Items { get; private set; } = new List<IBasketItem>();
+~~~
+
+Voor gewone OO-code is dat een mooie abstractie.  
+Voor Entity Framework is dat echter moeilijker.
+
+EF Core bewaart objecten in **tabellen** en moet dus weten welke **concrete klassen** gebruikt worden.  
+Daarom gebruiken we voor de EF-relatie opnieuw de abstracte basisklasse `BasketItem`.
+
+We passen `Basket` (zie volgende stap) dus aan naar:
+
+~~~cs
+public List<BasketItem> Items { get; private set; } = new List<BasketItem>();
+~~~
+
+Voor de rest wijzigt er niets: `BasketItem` blijft wel abstract.  
+en de concrete objecten `QuantityBasketItem` en `BulkBasketItem` blijven.
+
+### Stap 1: Basket aanpassen voor Entity Framework
+
+Naast de wijziging beschreven hierboven hebben we nog een wijziging nodig.  
+Entity Framework heeft namelijk een **primary key** nodig.  
+Hiervoor voegen we aan `Basket` een property `Id` toe.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class Basket
+    {
+        public int Id { get; private set; }
+
+        public List<BasketItem> Items { get; private set; } = new List<BasketItem>();
+
+        public void AddNewItem(BasketItem item)
+        {
+            if (ItemProvidedInBasket(item))
+            {
+                throw new ItemAlreadyInBasketException(item.Description);
+            }
+
+            Items.Add(item);
+        }
+
+        public bool ItemProvidedInBasket(BasketItem item)
+        {
+            return Lookup(item.Description) != null;
+        }
+
+        public BasketItem? Lookup(string description)
+        {
+            foreach (BasketItem item in Items)
+            {
+                if (item.Description.Equals(description))
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
+        public int TotalBasketPrice
+        {
+            get
+            {
+                int totalPrice = 0;
+
+                foreach (BasketItem item in Items)
+                {
+                    totalPrice += item.TotalPrice;
+                }
+
+                return totalPrice;
+            }
+        }
+    }
+}
+~~~
+
+> De `Id` zal later automatisch ingevuld door de database...
+
+### Stap 2: BasketItem aanpassen voor Entity Framework
+
+Binen onze abstracte klassen `BasketItem` voeren we 2 wijzigingen uit:
+
+* We voegen we ook een `Id` toe (deze is dan ineens geldig voor alle subklassen).
+* Daarnaast voegen we een `BasketId` toe. Dit wordt gebruikt EF Core om te weten bij welke `Basket` een bepaald item hoort.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public abstract class BasketItem
+    {
+        protected BasketItem()
+        {
+        }
+
+        public BasketItem(string description)
+        {
+            Description = description;
+        }
+
+        public int Id { get; private set; }
+
+        public int BasketId { get; private set; }
+
+        public string Description { get; private set; } = string.Empty;
+
+        public abstract int TotalPrice { get; }
+
+        public abstract int IncrementQuantity();
+
+        public abstract int DecrementQuantity();
+    }
+}
+~~~
+
+Let op deze **constructor**:
+
+~~~cs
+protected BasketItem()
+{
+}
+~~~
+
+Entity Framework heeft een **parameterloze constructor** nodig om objecten opnieuw te kunnen opbouwen vanuit de database.
+
+We maken deze constructor `protected`, zodat **gewone code** nog altijd **niet** zomaar een `BasketItem` kan **aanmaken**.
+
+De klasse blijft abstract:
+
+~~~cs
+public abstract class BasketItem
+~~~
+
+Je kan dus nog altijd niet rechtstreeks dit doen:
+
+~~~cs
+BasketItem item = new BasketItem();
+~~~
+
+### Stap 3: QuantityBasketItem aanpassen
+
+**Ook** de concrete klasse `QuantityBasketItem` moet een parameterloze constructor krijgen voor EF Core.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class QuantityBasketItem : BasketItem
+    {
+        private int _price;
+        private int _quantity;
+
+        protected QuantityBasketItem()
+        {
+        }
+
+        public QuantityBasketItem(int price, string description, int quantity = 1)
+            : base(description)
+        {
+            Price = price;
+            Quantity = quantity;
+        }
+
+        public int Price
+        {
+            get
+            {
+                return _price;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowedException("prijs");
+                }
+
+                _price = value;
+            }
+        }
+
+        public int Quantity
+        {
+            get
+            {
+                return _quantity;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowedException("hoeveelheid");
+                }
+
+                _quantity = value;
+            }
+        }
+
+        public override int TotalPrice
+        {
+            get
+            {
+                return Price * Quantity;
+            }
+        }
+
+        public override int IncrementQuantity()
+        {
+            Quantity++;
+            return Quantity;
+        }
+
+        public override int DecrementQuantity()
+        {
+            Quantity--;
+            return Quantity;
+        }
+
+        public override string ToString()
+        {
+            return $"{Quantity} maal {Description} voor {Price} per item, totaal {TotalPrice}";
+        }
+    }
+}
+~~~
+
+Belangrijk:
+
+~~~cs
+protected QuantityBasketItem()
+{
+}
+~~~
+
+Deze constructor is enkel bedoeld voor Entity Framework.
+
+### Stap 4: BulkBasketItem aanpassen
+
+We doen hetzelfde voor `BulkBasketItem`.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart
+{
+    public class BulkBasketItem : BasketItem
+    {
+        private int _pricePerKilo;
+        private int _weightInGrams;
+
+        protected BulkBasketItem()
+        {
+        }
+
+        public BulkBasketItem(int pricePerKilo, string description, int weightInGrams = 1000)
+            : base(description)
+        {
+            PricePerKilo = pricePerKilo;
+            WeightInGrams = weightInGrams;
+        }
+
+        public int PricePerKilo
+        {
+            get
+            {
+                return _pricePerKilo;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowedException("prijs");
+                }
+
+                _pricePerKilo = value;
+            }
+        }
+
+        public int WeightInGrams
+        {
+            get
+            {
+                return _weightInGrams;
+            }
+            private set
+            {
+                if (value < 0)
+                {
+                    throw new NoNegativeAmountAllowedException("gewicht");
+                }
+
+                _weightInGrams = value;
+            }
+        }
+
+        public override int TotalPrice
+        {
+            get
+            {
+                return PricePerKilo * WeightInGrams / 1000;
+            }
+        }
+
+        public override int IncrementQuantity()
+        {
+            WeightInGrams += 100;
+            return WeightInGrams;
+        }
+
+        public override int DecrementQuantity()
+        {
+            WeightInGrams -= 100;
+            return WeightInGrams;
+        }
+
+        public override string ToString()
+        {
+            return $"{WeightInGrams} gram {Description} voor {PricePerKilo} per kilo, totaal {TotalPrice}";
+        }
+    }
+}
+~~~
+
+#### Committen 'Adapting model for EF'
+
+Commit deze wijzigingen met de boodschap *'Adapting model for EF'*
+
+### Stap 5: ApplicationDbContext uitbreiden
+
+Open in het MVC-project `Data/ApplicationDbContext.cs`, deze ziet deze er momenteel ongeveer zo uit:
+
+~~~cs
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace PRB.ShoppingBasket.Bart.Web.Data
+{
+    public class ApplicationDbContext : IdentityDbContext
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+    }
+}
+~~~
+
+We voegen nu `DbSet`-properties toe voor `Basket` en `BasketItem`.
+
+Daarnaast configureren we in `OnModelCreating` hoe Entity Framework met de relatie tussen `Basket` en `BasketItem` moet omgaan, en hoe de verschillende soorten `BasketItem` bewaard worden.
+
+~~~cs
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Web.Data
+{
+    public class ApplicationDbContext : IdentityDbContext
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+
+        public DbSet<Basket> Baskets { get; set; }
+
+        public DbSet<BasketItem> BasketItems { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<Basket>()
+                .HasMany(basket => basket.Items)
+                .WithOne()
+                .HasForeignKey(item => item.BasketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<BasketItem>()
+                .HasDiscriminator<string>("BasketItemType")
+                .HasValue<QuantityBasketItem>("Quantity")
+                .HasValue<BulkBasketItem>("Bulk");
+
+            builder.Entity<QuantityBasketItem>()
+                .Property(item => item.Price);
+
+            builder.Entity<QuantityBasketItem>()
+                .Property(item => item.Quantity);
+
+            builder.Entity<BulkBasketItem>()
+                .Property(item => item.PricePerKilo);
+
+            builder.Entity<BulkBasketItem>()
+                .Property(item => item.WeightInGrams);
+
+            builder.Entity<BasketItem>()
+                .Property(item => item.Description)
+                .IsRequired();
+        }
+    }
+}
+~~~
+
+#### Wat gebeurt hier?
+
+Met deze twee `DbSet`-properties zeggen we tegen Entity Framework dat deze types in de database bewaard moeten worden:
+
+~~~cs
+public DbSet<Basket> Baskets { get; set; }
+
+public DbSet<BasketItem> BasketItems { get; set; }
+~~~
+
+De relatie tussen `Basket` en `BasketItem` wordt hier ingesteld:
+
+~~~cs
+builder.Entity<Basket>()
+    .HasMany(basket => basket.Items)
+    .WithOne()
+    .HasForeignKey(item => item.BasketId)
+    .OnDelete(DeleteBehavior.Cascade);
+~~~
+
+Dit betekent:
+
+* Eén `Basket` heeft meerdere `BasketItems`
+* Elk `BasketItem` hoort bij één `Basket`
+* De foreign key staat in `BasketItem.BasketId`
+* Als een `Basket` verwijderd wordt, worden de bijhorende items ook verwijderd
+
+Dat laatste noemen we **cascade delete**.
+
+#### Verduidelijking: inheritance mapping
+
+We hebben een abstracte klasse `BasketItem` met twee concrete child-klassen `QuantityBasketItem` en `BulkBasketItem`
+
+Entity Framework moet echter wel weten hoe het deze overerving moet bewaren in de database.
+
+Daarvoor gebruiken we:
+
+~~~cs
+.HasDiscriminator<string>("BasketItemType")
+~~~
+
+Dit betekent dat EF Core één extra kolom toevoegt aan de tabel `BasketItems`.
+
+Die kolom heet:
+
+~~~text
+BasketItemType
+~~~
+
+Daarin komt dan bijvoorbeeld:
+
+~~~text
+Quantity
+~~~
+
+of:
+
+~~~text
+Bulk
+~~~
+
+Op die manier weet EF Core welk type object opnieuw moet worden aangemaakt wanneer gegevens uit de database worden gelezen.
+
+Dit mechanisme noemen we **Table Per Hierarchy**, vaak afgekort als **TPH**.
+
+De tabel `BasketItems` bevat dan kolommen voor beide soorten items:
+
+~~~text
+Id
+BasketId
+Description
+BasketItemType
+Price
+Quantity
+PricePerKilo
+WeightInGrams
+~~~
+
+Voor een `QuantityBasketItem` zijn vooral deze kolommen ingevuld:
+
+~~~text
+Price
+Quantity
+~~~
+
+Voor een `BulkBasketItem` zijn vooral deze kolommen ingevuld:
+
+~~~text
+PricePerKilo
+WeightInGrams
+~~~
+
+### Stap 6: Migration maken
+
+Nu maken we een nieuwe migration met de naam `AddBasketModel`, vergeet na de migratie niet de update uit te voeren van de database (zie eerder voor het uitvoeren van migration)
+
+### Stap 7: Testdata toevoegen in een controller
+
+Om snel te testen of EF Core werkt, kunnen we tijdelijk testdata toevoegen in een controller.
+
+Open bijvoorbeeld `Controllers/HomeController.cs, hier moeten je nakijken of volgende using-directives reeds zijn toegevoegd:
+
+~~~cs
+using Microsoft.EntityFrameworkCore;
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Models;
+~~~
+
+Pas de controller aan zodat `ApplicationDbContext` via dependency injection wordt binnengebracht.
+
+~~~cs
+namespace PRB.ShoppingBasket.Bart.Web.Controllers
+{
+    public class HomeController : Controller
+    {
+        private readonly ApplicationDbContext _context;
+
+        public HomeController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public IActionResult Index()
+        {
+            return View();
+        }
+    }
+}
+~~~
+
+Voeg daarna tijdelijk een actie toe om een basket te maken:
+
+~~~cs
+public IActionResult CreateTestBasket()
+{
+    Basket basket = new Basket();
+
+    basket.AddNewItem(new QuantityBasketItem(10, "Cola", 3));
+    basket.AddNewItem(new BulkBasketItem(4, "Bloem", 1500));
+
+    _context.Baskets.Add(basket);
+    _context.SaveChanges();
+
+    return RedirectToAction("ShowBaskets");
+}
+~~~
+
+Voeg ook een actie toe om alle baskets te tonen:
+
+~~~cs
+public IActionResult ShowBaskets()
+{
+    List<Basket> baskets = _context.Baskets
+        .Include(basket => basket.Items)
+        .ToList();
+
+    return View(baskets);
+}
+~~~
+
+### Stap 8: View maken om baskets te tonen
+
+Maak een nieuwe view `Views/Home/ShowBaskets.cshtml` en gebruik deze inhoud:
+
+~~~html
+@using PRB.ShoppingBasket.Bart
+@model List<Basket>
+
+<h1>Winkelmandjes</h1>
+
+@foreach (Basket basket in Model)
+{
+    <h2>Basket @basket.Id</h2>
+
+    <p>Totaalprijs: @basket.TotalBasketPrice</p>
+
+    <ul>
+        @foreach (BasketItem item in basket.Items)
+        {
+            <li>@item</li>
+        }
+    </ul>
+}
+~~~
+
+Start daarna de applicatie en navigeer via de browser naar `/Home/CreateTestBasket`
+
+Daarna word je doorgestuurd naar `/Home/ShowBaskets`
+
+Je zou nu een winkelmandje moeten zien met:
+
+* Cola
+* Bloem
+* Totaalprijs
+
+Als je dit de 1ste maal uitvoert krijg je:
+
+![alt text](CreateBasket1.png)
+
+Let wel, telkens als dit opnieuw uitvoert wordt er een nieuwe Basket bijgevoegd...
+
+![alt text](CreateBasket2.png)
+
+#### Duiding: Waarom Include nodig is
+
+Bij het ophalen van baskets gebruiken we:
+
+~~~cs
+_context.Baskets
+    .Include(basket => basket.Items)
+    .ToList();
+~~~
+
+De `Include` is belangrijk, zonder `Include` haalt EF Core enkel de `Basket`-objecten op.  
+Met `Include` vragen we expliciet om ook de bijhorende `BasketItems` op te halen.
+
+Dit noemen we **eager loading**.
+
+#### Duiding: Controleren welk type EF teruggeeft
+
+Omdat we met overerving werken, moet EF Core opnieuw de juiste concrete klassen maken.
+
+Dat betekent:
+
+* Een rij met `BasketItemType = Quantity` wordt opnieuw een `QuantityBasketItem`
+* Een rij met `BasketItemType = Bulk` wordt opnieuw een `BulkBasketItem`
+
+Onze view gebruikt gewoon:
+
+~~~cs
+@foreach (BasketItem item in basket.Items)
+{
+    <li>@item</li>
+}
+~~~
+
+Omdat `ToString()` overschreven is in de child-klassen, wordt automatisch de juiste tekst getoond.
+
+Bijvoorbeeld:
+
+~~~text
+3 maal Cola voor 10 per item, totaal 30
+1500 gram Bloem voor 4 per kilo, totaal 6
+~~~
+
+Dit is opnieuw een voorbeeld van **polymorfisme**.
+
+#### Duiding: berekende properties
+
+De property `TotalPrice` wordt niet rechtstreeks opgeslagen in de database.
+
+Dat **hoeft** ook **niet**, want deze waarde kan altijd **opnieuw** **berekend** worden op basis van:
+
+* `Price` en `Quantity`
+* of `PricePerKilo` en `WeightInGrams`
+
+Ook de property:
+
+~~~cs
+public int TotalBasketPrice
+~~~
+
+wordt niet opgeslagen, deze wordt berekend op basis van alle items in de basket.
+
+Dat is een **belangrijk** principe: **sla niet onnodig gegevens op** die je eenvoudig opnieuw kan **berekenen**.
+
+### Testen en committen: 'Add Entity Framework mapping for baskets and basket items'
+
+Als bovenstaande stap getest is maak een commit met bijvoorbeeld `Add Entity Framework mapping for baskets and basket items`
+
+### Entity Framework Samengevat
+
+In dit hoofdstuk hebben we Entity Framework toegevoegd voor onze winkelmandlogica.
+
+We hebben:
+
+* `Basket` een `Id` gegeven
+* `BasketItem` een `Id` en `BasketId` gegeven
+* Parameterloze constructors toegevoegd voor EF Core
+* `ApplicationDbContext` uitgebreid met `DbSet<Basket>` en `DbSet<BasketItem>`
+* Inheritance mapping toegevoegd voor `QuantityBasketItem` en `BulkBasketItem`
+* Een migration gemaakt
+* Testdata opgeslagen in SQLite
+* Baskets opnieuw opgehaald met `.Include(...)`
+
+Onze applicatie bewaart nu niet enkel gebruikers via Identity, maar ook winkelmandjes en hun verschillende soorten items.

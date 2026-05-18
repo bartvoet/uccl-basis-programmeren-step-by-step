@@ -4446,3 +4446,630 @@ We hebben:
 * Baskets opnieuw opgehaald met `.Include(...)`
 
 Onze applicatie bewaart nu niet enkel gebruikers via Identity, maar ook winkelmandjes en hun verschillende soorten items.
+
+## BasketService en BasketRepository 
+
+In dit hoofdstuk voegen we een **service** en een **repository** toe voor onze winkelmandlogica.  
+We gaan hier ook meer gebruik maken van Dependency Injection...
+
+Tot nu toe gebruiken we `ApplicationDbContext` rechtstreeks in onze controller of service.  
+Dat werkt, maar het zorgt ervoor dat de code sterker **gekoppeld** is aan Entity Framework.
+
+We gaan daarom twee extra lagen toevoegen:
+
+* Een **repository-laag** voor **database-toegang**
+* Een **service-laag** voor **applicatielogica**
+* Registratie via **dependency injection**
+* **Gebruik** van de **service** in een **controller**
+
+De structuur wordt dan:
+
+~~~text
+BasketController
+        |
+        v
+IBasketService
+        |
+        v
+BasketService
+        |
+        v
+IBasketRepository
+        |
+        v
+BasketRepository
+        |
+        v
+ApplicationDbContext
+        |
+        v
+SQLite database
+~~~
+
+### Waarom een repository?
+
+Een **repository** is verantwoordelijk voor het ophalen en bewaren van gegevens.
+
+Voorbeelden:
+
+* Alle baskets ophalen
+* Eén basket ophalen op basis van id
+* Een basket toevoegen
+* Wijzigingen bewaren
+
+De repository weet dus hoe de database werkt.  
+In ons geval gebruikt de repository `ApplicationDbContext`.
+
+De controller en service hoeven daardoor niet rechtstreeks met Entity Framework te werken.
+
+### Waarom daarnaast nog een service?
+
+Een **service** bevat applicatielogica.
+
+Voorbeelden:
+
+* Een nieuwe testbasket aanmaken
+* Controleren of een item mag worden toegevoegd
+* Een totaal berekenen
+* Later eventueel regels rond gebruikers of rollen toepassen
+
+In eenvoudige applicaties lijken repository en service soms sterk op elkaar.  
+Toch houden we ze hier apart, omdat dit goed toont hoe dependency injection werkt.
+
+### Stap 1: Folders maken
+
+Maak in het MVC-project twee nieuwe folders aan:
+
+~~~text
+Repositories
+Services
+~~~
+
+De structuur wordt dan:
+
+~~~text
+PRB.ShoppingBasket.Bart.Web
+│
+├── Controllers
+├── Models
+├── Repositories
+│   ├── IBasketRepository.cs
+│   └── BasketRepository.cs
+├── Services
+│   ├── IBasketService.cs
+│   └── BasketService.cs
+├── Views
+└── Program.cs
+~~~
+
+We plaatsen deze klassen in het webproject omdat ze rechtstreeks samenwerken met `ApplicationDbContext`.
+
+### Stap 2: Interface IBasketRepository maken
+
+Maak in de folder `Repositories` een nieuwe klasse `IBasketRepository.cs` aan met als inhoud:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Web.Repositories
+{
+    public interface IBasketRepository
+    {
+        List<Basket> GetAll();
+
+        Basket? GetById(int id);
+
+        void Add(Basket basket);
+
+        void SaveChanges();
+    }
+}
+~~~
+
+Deze interface beschrijft welke **database-acties** beschikbaar zijn voor baskets.
+
+> Ze zegt nog niet hoe die acties uitgevoerd worden.
+
+### Stap 3: BasketRepository maken
+
+Maak in de folder `Repositories` een nieuw bestand aan `BasketRepository.cs` met volgende inhoud:
+
+~~~cs
+using Microsoft.EntityFrameworkCore;
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Data;
+
+namespace PRB.ShoppingBasket.Bart.Web.Repositories
+{
+    public class BasketRepository : IBasketRepository
+    {
+        private readonly ApplicationDbContext _context;
+
+        public BasketRepository(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public List<Basket> GetAll()
+        {
+            return _context.Baskets
+                .Include(basket => basket.Items)
+                .ToList();
+        }
+
+        public Basket? GetById(int id)
+        {
+            return _context.Baskets
+                .Include(basket => basket.Items)
+                .FirstOrDefault(basket => basket.Id == id);
+        }
+
+        public void Add(Basket basket)
+        {
+            _context.Baskets.Add(basket);
+        }
+
+        public void SaveChanges()
+        {
+            _context.SaveChanges();
+        }
+    }
+}
+~~~
+
+De repository gebruikt `ApplicationDbContext`.
+
+Bemerk dat we bij het ophalen van baskets telkens `.Include(...)` gebruiken:
+
+~~~cs
+.Include(basket => basket.Items)
+~~~
+
+Zo worden de bijhorende `BasketItems` meteen mee opgehaald.
+
+### Stap 4: Interface IBasketService maken
+
+Maak in de folder `Services` een nieuwe klasse `IBasketService.cs` aan met als inhoud:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+
+namespace PRB.ShoppingBasket.Bart.Web.Services
+{
+    public interface IBasketService
+    {
+        List<Basket> GetAllBaskets();
+
+        Basket? GetBasketById(int id);
+
+        Basket CreateTestBasket();
+    }
+}
+~~~
+
+Deze service-interface is gericht op wat de **applicatie** wil doen, de **namen** zijn daarom iets meer **applicatiegericht**:
+
+* `GetAllBaskets`
+* `GetBasketById`
+* `CreateTestBasket`
+
+### Stap 5: BasketService maken
+
+Maak in de folder `Services` een nieuw bestand aan `BasketService.cs` en plaats daarin:
+
+~~~cs
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Repositories;
+
+namespace PRB.ShoppingBasket.Bart.Web.Services
+{
+    public class BasketService : IBasketService
+    {
+        private readonly IBasketRepository _basketRepository;
+
+        public BasketService(IBasketRepository basketRepository)
+        {
+            _basketRepository = basketRepository;
+        }
+
+        public List<Basket> GetAllBaskets()
+        {
+            return _basketRepository.GetAll();
+        }
+
+        public Basket? GetBasketById(int id)
+        {
+            return _basketRepository.GetById(id);
+        }
+
+        public Basket CreateTestBasket()
+        {
+            Basket basket = new Basket();
+
+            basket.AddNewItem(new QuantityBasketItem(10, "Cola", 3));
+            basket.AddNewItem(new BulkBasketItem(4, "Bloem", 1500));
+
+            _basketRepository.Add(basket);
+            _basketRepository.SaveChanges();
+
+            return basket;
+        }
+    }
+}
+~~~
+
+De service gebruikt geen `ApplicationDbContext`, niet rechtstreeks maar via `IBasketRepository`.  
+Daardoor is de service niet rechtstreeks gekoppeld aan het Entity Framework.
+
+### Stap 6: Repository en service registreren in Program.cs
+
+ASP.NET Core moet weten welke **concrete klassen** bij de interfaces horen.  Open `Program.cs` (Web-project) en voeg bovenaan toe:
+
+~~~cs
+using PRB.ShoppingBasket.Bart.Web.Repositories;
+using PRB.ShoppingBasket.Bart.Web.Services;
+~~~
+
+Zoek de plaats waar de services worden geregistreerd, vóór:
+
+~~~cs
+var app = builder.Build();
+~~~
+
+Voeg daar toe:
+
+~~~cs
+builder.Services.AddScoped<IBasketRepository, BasketRepository>();
+builder.Services.AddScoped<IBasketService, BasketService>();
+~~~
+
+Een groter stuk van `Program.cs` kan er dan zo uitzien:
+
+~~~cs
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(connectionString));
+
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.AddScoped<IBasketRepository, BasketRepository>();
+builder.Services.AddScoped<IBasketService, BasketService>();
+
+builder.Services.AddControllersWithViews();
+~~~
+
+Hier zeggen we:
+
+~~~cs
+builder.Services.AddScoped<IBasketRepository, BasketRepository>();
+~~~
+
+Als iemand een `IBasketRepository` vraagt, geef dan een `BasketRepository` daarna
+
+~~~cs
+builder.Services.AddScoped<IBasketService, BasketService>();
+~~~
+
+Als iemand een `IBasketService` vraagt, geef dan een `BasketService`.
+
+#### Duiding: Wat betekent AddScoped?
+
+ASP.NET Core kent verschillende levensduren voor services, met `AddScoped` maken we één object per HTTP-request.
+
+Dat betekent:
+
+* Komt er **1 request** binnen, dan wordt er **1 repository** en **1 service** gemaakt
+* Binnen **datzelfde** **request** worden deze objecten **hergebruikt**
+* Bij een **volgend** **request** worden **nieuwe** **objecten** gemaakt
+
+Dat past goed bij `ApplicationDbContext`, want ook die wordt typisch als scoped service gebruikt.
+
+Andere mogelijkheden zijn 
+
+* `AddTransient` waarbij telkens een nieuw object gemaakt wanneer de service gevraagd wordt.
+* `AddSingleton` waarbij één object gemaakt voor de volledige levensduur van de applicatie.
+
+Voor databasegerichte repositories en services gebruiken we meestal `AddScoped`
+
+### Stap 7: BasketController maken
+
+Maak nu een nieuwe controller aan met de naam `Controllers/BasketController.cs` met als inhoud:
+
+~~~cs
+using Microsoft.AspNetCore.Mvc;
+using PRB.ShoppingBasket.Bart;
+using PRB.ShoppingBasket.Bart.Web.Services;
+
+namespace PRB.ShoppingBasket.Bart.Web.Controllers
+{
+    public class BasketController : Controller
+    {
+        private readonly IBasketService _basketService;
+
+        public BasketController(IBasketService basketService)
+        {
+            _basketService = basketService;
+        }
+
+        public IActionResult Index()
+        {
+            List<Basket> baskets = _basketService.GetAllBaskets();
+
+            return View(baskets);
+        }
+
+        public IActionResult Details(int id)
+        {
+            Basket? basket = _basketService.GetBasketById(id);
+
+            if (basket == null)
+            {
+                return NotFound();
+            }
+
+            return View(basket);
+        }
+
+        public IActionResult CreateTestBasket()
+        {
+            Basket basket = _basketService.CreateTestBasket();
+
+            return RedirectToAction("Details", new { id = basket.Id });
+        }
+    }
+}
+~~~
+
+Bemerk dat deze controller geen `ApplicationDbContext` en geen repository gebruikt enkel `IBasketService`
+
+> Het (kunnen) werken met interfaces is een belangrijk voordeel van dependency injection.
+
+### Stap 8: View voor Index maken
+
+Maak een nieuwe folder aan `Views/Basket` met een view `Index.cshtml` met als inhoud
+
+> Je kan in je IDE ook met de rechtermuisknop op de action klikken en de view vandaar aanmaken...
+
+~~~html
+@using PRB.ShoppingBasket.Bart
+@model List<Basket>
+
+<h1>Winkelmandjes</h1>
+
+<p>
+    <a asp-controller="Basket" asp-action="CreateTestBasket">Maak testbasket aan</a>
+</p>
+
+@if (!Model.Any())
+{
+    <p>Er zijn nog geen winkelmandjes.</p>
+}
+else
+{
+    <ul>
+        @foreach (Basket basket in Model)
+        {
+            <li>
+                <a asp-controller="Basket" asp-action="Details" asp-route-id="@basket.Id">
+                    Basket @basket.Id
+                </a>
+                - totaal: @basket.TotalBasketPrice
+            </li>
+        }
+    </ul>
+}
+~~~
+
+Deze view toont alle bestaande baskets.  
+Er is ook een link voorzien om snel een testbasket aan te maken.
+
+### Stap 9: View voor Details maken
+
+Maak in dezelfde folder een detail-view aan `Views/Basket/Details.cshtml`:
+
+~~~html
+@using PRB.ShoppingBasket.Bart
+@model Basket
+
+<h1>Basket @Model.Id</h1>
+
+<p>Totaalprijs: @Model.TotalBasketPrice</p>
+
+<h2>Items</h2>
+
+@if (!Model.Items.Any())
+{
+    <p>Deze basket bevat nog geen items.</p>
+}
+else
+{
+    <ul>
+        @foreach (BasketItem item in Model.Items)
+        {
+            <li>@item</li>
+        }
+    </ul>
+}
+
+<p>
+    <a asp-controller="Basket" asp-action="Index">Terug naar overzicht</a>
+</p>
+~~~
+
+Deze view toont 1 basket met alle items.
+
+### Stap 10: Navigatielink toevoegen
+
+Om de basketpagina gemakkelijk bereikbaar te maken, voegen we een link toe in de layout, open `Views/Shared/_Layout.cshtml` en voeg in de navigatie een link toe:
+
+~~~html
+<li class="nav-item">
+    <a class="nav-link text-dark" asp-area="" asp-controller="Basket" asp-action="Index">Baskets</a>
+</li>
+~~~
+
+Plaats deze naast de bestaande Home-link.
+
+### Stap 11: Testen
+
+Start de MVC-applicatie.
+
+Ga naar `/Basket` en controleer dat:
+
+* De pagina toont een overzicht van baskets
+* Je kan een testbasket aanmaken
+* Je wordt doorgestuurd naar de detailpagina
+* De detailpagina toont de items
+* De totaalprijs wordt correct getoond
+
+### Duiding: Wat hebben we bereikt?
+
+Voor deze wijziging werkte de controller of service rechtstreeks met `ApplicationDbContext`.
+
+Na deze wijziging ziet de structuur er beter uit:
+
+~~~text
+BasketController
+        |
+        v
+IBasketService
+        |
+        v
+BasketService
+        |
+        v
+IBasketRepository
+        |
+        v
+BasketRepository
+        |
+        v
+ApplicationDbContext
+        |
+        v
+SQLite database
+~~~
+
+Elke laag heeft nu een duidelijke verantwoordelijkheid.
+
+#### Verantwoordelijkheid per laag
+
+##### Controller
+
+De controller is verantwoordelijk voor webverkeer.
+
+De controller:
+
+* Ontvangt requests
+* Roept de service aan
+* Geeft een view terug
+* Stuurt eventueel door naar een andere action
+
+De controller weet niet hoe de database werkt.
+
+##### Service
+
+De service bevat applicatielogica.
+
+De service:
+
+* Gebruikt de repository
+* Maakt bijvoorbeeld een testbasket aan
+* Kan later extra regels bevatten
+* Weet niet rechtstreeks hoe Entity Framework werkt
+
+##### Repository
+
+De repository bevat database-toegang.
+
+De repository:
+
+* Gebruikt `ApplicationDbContext`
+* Haalt baskets op
+* Voegt baskets toe
+* Bewaart wijzigingen
+
+#### Waarom interfaces?
+
+We hadden ook rechtstreeks `BasketService` en `BasketRepository` kunnen gebruiken.
+
+Bijvoorbeeld:
+
+~~~cs
+private readonly BasketService _basketService;
+~~~
+
+Toch gebruiken we liever interfaces:
+
+~~~cs
+private readonly IBasketService _basketService;
+~~~
+
+en:
+
+~~~cs
+private readonly IBasketRepository _basketRepository;
+~~~
+
+Dat heeft enkele voordelen:
+
+* De code hangt minder vast aan concrete klassen
+* We kunnen later een andere implementatie maken
+* We kunnen gemakkelijker unit tests schrijven
+* De verantwoordelijkheden worden duidelijker
+
+Bijvoorbeeld: later zouden we een fake repository kunnen maken voor testen:
+
+~~~cs
+public class FakeBasketRepository : IBasketRepository
+{
+    private readonly List<Basket> _baskets = new List<Basket>();
+
+    public List<Basket> GetAll()
+    {
+        return _baskets;
+    }
+
+    public Basket? GetById(int id)
+    {
+        return _baskets.FirstOrDefault(basket => basket.Id == id);
+    }
+
+    public void Add(Basket basket)
+    {
+        _baskets.Add(basket);
+    }
+
+    public void SaveChanges()
+    {
+    }
+}
+~~~
+
+Dan kunnen we `BasketService` testen zonder echte database.
+
+### Finale stap: Commit maken
+
+Maak na deze stap een commit met *"Add basket service and repository with dependency injection"*
+
+### Services en Repositories samengevat
+
+In dit hoofdstuk hebben we dependency injection toegepast met een service- en repositorylaag.
+
+We hebben:
+
+* Een `Repositories`-folder toegevoegd
+* Een `Services`-folder toegevoegd
+* Een interface `IBasketRepository` gemaakt
+* Een concrete klasse `BasketRepository` gemaakt
+* Een interface `IBasketService` gemaakt
+* Een concrete klasse `BasketService` gemaakt
+* Repository en service geregistreerd in `Program.cs`
+* De service gebruikt in `BasketController`
+* Views gemaakt voor overzicht en details
+
+Hierdoor is de controller minder afhankelijk van Entity Framework en is de code beter gestructureerd.
